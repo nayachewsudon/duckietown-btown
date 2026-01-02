@@ -1,7 +1,7 @@
 # parameters
 ARG REPO_NAME="duckietown-btown"
 ARG DESCRIPTION="Safe RL using Shield based reachable zonotopes, implemented on a Duckiebot"
-ARG MAINTAINER="Kanaya Ozora (kanayaozora@gmail.com)"
+ARG MAINTAINER="Kanaya Ozora (ADD EMAIL)"
 # pick an icon from: https://fontawesome.com/v4.7.0/icons/
 ARG ICON="cube"
 
