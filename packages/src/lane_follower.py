@@ -5,8 +5,7 @@ import cv2
 class LaneDetector: 
     """Calculates the error of the target position to the actual position of the Duckiebot"""
 
-    def __init__ (self, image):
-        self.image = image
+    def __init__ (self):
     
     def detect(self, image):
         self.image = image
