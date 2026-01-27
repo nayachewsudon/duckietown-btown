@@ -1,10 +1,10 @@
 docs_config_version: v1
 
 # CONFIGURE THESE TO MATCH YOUR PROJECT:
-project: "REPOSITORY_NAME_HERE"
+project: "duckietown-btown"
 copyright: "Duckietown"
-author: "YOUR_NAME_HERE"
-version: "ente"
+author: "Kanaya and Chits"
+version: "daffy"
 custom_sections:  [
   "Configuration",
   "Subscribers",
