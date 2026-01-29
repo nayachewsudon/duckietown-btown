@@ -1,0 +1,2 @@
+
+-DCATKIN_DEVEL_PREFIX=/code/catkin_ws/src/duckietown-btown/packages/devel -DCMAKE_INSTALL_PREFIX=/code/catkin_ws/src/duckietown-btown/packages/install -G Unix Makefiles
