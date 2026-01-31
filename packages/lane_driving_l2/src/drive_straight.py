@@ -8,6 +8,7 @@ def drive_straight():
     rospy.init_node('drive_straight_node', anonymous=True)
     
     # Create publisher - note: NO vehicle name in topic
+
     pub = rospy.Publisher('lane_controller_node/car_cmd', Twist2DStamped, queue_size=1)
     
     # Wait for publisher to connect
@@ -20,7 +21,11 @@ def drive_straight():
     
     # Publish for a duration to drive ~1m
     rate = rospy.Rate(10)  # 10 Hz
+<<<<<<< HEAD
     duration = rospy.Duration(4)  # Adjust based on velocity
+=======
+    duration = rospy.Duration(3.5)  # Adjust based on velocity
+>>>>>>> 6c5ecea5309da00f87772ba747c2419f3e260bc0
     start_time = rospy.Time.now()
     
     while rospy.Time.now() - start_time < duration:
