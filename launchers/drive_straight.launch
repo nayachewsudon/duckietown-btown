@@ -1,0 +1,14 @@
+<launch>
+
+  <group ns="$(env duckie2)"> 
+
+    <node pkg="lane_driving_l2" type="drive_straight.py" name="drive_straight_node" output="screen"/>
+
+  </group>
+
+  <include file="$(find fsm)/launch/fsm_node.launch">
+        <arg name="veh" value="$(env duckie2)"/>
+        <arg name="param_file_name" value="lane_following"/>
+  </include>
+
+</launch>

@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /code/catkin_ws/src/duckietown-btown/packages/install/setup.sh
