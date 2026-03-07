@@ -15,6 +15,36 @@ events: # Maps from subscribing topic to signal ids
     topic:
     msg_type:
     trigger:
+  object_detected:
+    topic: 
+    msg_type:
+    trigger:
+
+  object_avoided:
+    topic:
+    msg_type:
+    trigger:
+
+  collision_detected:
+    topic:
+    msg_type:
+    trigger:
+  
+  tasks_accomplished:
+    topic:
+    msg_type:
+    trigger:
+
+  timeout:
+    topic:
+    msg_type:
+    trigger:
+  # this is for training the rl agent
+  ep_reset:
+    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+    msg_type:
+    trigger:
+
 # Define nodes
 nodes:
   anti_instagram: "anti_instagram_node/switch"
@@ -24,6 +54,7 @@ nodes:
   stop_line_filter_node: "stop_line_filter_node/switch"
   lane_controller_node: "lane_controller_node/switch"
   led_emitter_node: "led_emitter_node/switch"
+  safe_rl: "safe_rl/switch"
 
 
 # Define global state transitiobs
@@ -35,6 +66,7 @@ states:
   LANE_FOLLOWING:
     transitions:
       at_stop_line: "ARRIVE_AT_STOP_LINE"
+      object_detected: "OBJECT_AVOIDANCE"
     active_nodes:
       - anti_instagram
       - line_detector_node
@@ -61,3 +93,18 @@ states:
       - led_emitter_node
       - anti_instagram
     lights: "YELLOW"
+
+  EPISODE_RESET:
+    transitions:
+    active_nodes:
+    lights: "RED"
+
+  OBJECT_AVOIDANCE:
+    transitions:
+      tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
+      object_avoided: LANE_FOLLOWING
+      collision_detected: EMERGENCY_STOP
+    active_nodes:
+    lights: "BLUE"
+
+
