@@ -51,7 +51,8 @@ class UnicornIntersectionNode(DTROS):
 
 
         ## Subscribers
-        self.sub_turn_type = rospy.Subscriber("~turn_id_and_type", TurnIDandType, self.cbTurnType)
+        # Subscribe to turn type from intersection_planner_node (determined by detected segments)
+        self.sub_turn_type = rospy.Subscriber("unicorn_intersection_node/turn_id_and_type", TurnIDandType, self.cbTurnType)
         self.sub_encoder_left = message_filters.Subscriber("~left_wheel_encoder_driver_node/tick", WheelEncoderStamped)
         self.sub_encoder_right = message_filters.Subscriber("~right_wheel_encoder_driver_node/tick", WheelEncoderStamped)
         self.sub_encoder_right = message_filters.Subscriber("~right_wheel_encoder_driver_node/tick", WheelEncoderStamped)
@@ -301,7 +302,7 @@ class UnicornIntersectionNode(DTROS):
         self.check_if_go()
 
     def setupParams(self):
-        self.use_stop_pose = self.setupParam("~use_stop_pose", False)
+        self.use_stop_pose = self.setupParam("~use_stop_pose", True)
         self.num_waypoints = self.setupParam("~num_waypoints", 2)
         self.visualization = self.setupParam("~visualization", True)
         default_pose = {'x': 0.0, 'y': 0.0, 'theta': 0.0 }
