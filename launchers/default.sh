@@ -13,7 +13,8 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch --wait duckietown_demos lane_following.launch
+dt-exec echo "This is an empty launch script. Update it to launch your application"
+
 
 
 # ----------------------------------------------------------------------------
