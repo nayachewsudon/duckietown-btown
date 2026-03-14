@@ -3,7 +3,7 @@
 	<arg name="veh" doc="Name of vehicle. ex: megaman"/>
     <arg name="param_file_name" default="default" doc="Specify a param file. ex:megaman"/>
 
-	<arg name="traffic_mode" doc="Left/Right-hand traffic"/>
+	<arg name="traffic_mode" default="RHT" doc="Left/Right-hand traffic"/>
 	<param name="/$(arg veh)/behavior/traffic_mode" value="$(arg traffic_mode)" />
 
 	<group ns="$(arg veh)">
