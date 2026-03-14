@@ -16,7 +16,7 @@ events: # Maps from subscribing topic to signal ids
     topic: ""
     msg_type: ""
     trigger: False
-  object_detected: ""
+  object_detected:
     topic: ""
     msg_type: ""
     trigger: False
@@ -39,7 +39,7 @@ events: # Maps from subscribing topic to signal ids
   timeout:
     topic: ""
     msg_type: ""
-    trigger: ""
+    trigger: False
   # this is for training the rl agent
   ep_reset:
     topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
