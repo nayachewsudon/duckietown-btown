@@ -69,7 +69,7 @@ states:
   LANE_FOLLOWING:
     transitions:
       at_stop_line: "ARRIVE_AT_STOP_LINE"
-      object_detected: "OBJECT_AVOIDANCE"
+#      object_detected: "OBJECT_AVOIDANCE"
     active_nodes:
       - anti_instagram
       - line_detector_node
