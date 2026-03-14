@@ -106,10 +106,10 @@ states:
     active_nodes: []
     lights: "RED"
 
-  OBJECT_AVOIDANCE:
-    transitions:
+  #OBJECT_AVOIDANCE:
+   # transitions:
       #tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
-      object_avoided: "LANE_FOLLOWING"
-      collision_detected: "EMERGENCY_STOP"
-    active_nodes:
-    lights: "BLUE"
+      #object_avoided: "LANE_FOLLOWING"
+     # collision_detected: "EMERGENCY_STOP"
+    #active_nodes:
+    #lights: "BLUE"
