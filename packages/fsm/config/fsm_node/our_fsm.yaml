@@ -13,38 +13,38 @@ events: # Maps from subscribing topic to signal ids
     trigger: True
 
   after_emergency_stop:
-    topic:
-    msg_type:
-    trigger:
-  object_detected:
-    topic: 
-    msg_type:
-    trigger:
+    topic: ""
+    msg_type: ""
+    trigger: False
+  object_detected: ""
+    topic: ""
+    msg_type: ""
+    trigger: False
 
-  object_avoided:
-    topic:
-    msg_type:
-    trigger:
+  object_avoided: 
+    topic: ""
+    msg_type: ""
+    trigger: False
 
   collision_detected:
-    topic:
-    msg_type:
-    trigger:
+    topic: ""
+    msg_type: ""
+    trigger: False
   
   tasks_accomplished:
-    topic:
-    msg_type:
-    trigger:
+    topic: ""
+    msg_type: ""
+    trigger: False
 
   timeout:
-    topic:
-    msg_type:
-    trigger:
+    topic: ""
+    msg_type: ""
+    trigger: ""
   # this is for training the rl agent
   ep_reset:
     topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
-    msg_type:
-    trigger:
+    msg_type: ""
+    trigger: False
 
 # Define nodes
 nodes:
@@ -61,7 +61,7 @@ nodes:
 
 
 # Define global state transitiobs
-global_transitions:
+#global_transitions:
 
 # Define states
 
@@ -102,8 +102,8 @@ states:
     lights: "YELLOW"
 
   EPISODE_RESET:
-    transitions:
-    active_nodes:
+    transitions: {}
+    active_nodes: []
     lights: "RED"
 
   OBJECT_AVOIDANCE:
