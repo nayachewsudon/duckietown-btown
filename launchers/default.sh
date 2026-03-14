@@ -12,8 +12,8 @@ dt-launchfile-init
 # NOTE: Use the variable DT_REPO_PATH to know the absolute path to your code
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
-# launching duckietown lane following demo to launch all the nodes 
-dt-exec roslaunch --wait duckietown_demos lane_following.launch veh:=\$VEHICLE_NAME
+# launching FSM to control lane following with state management
+dt-exec roslaunch --wait duckietown_btown fsm_lane_following.launch veh:=\$VEHICLE_NAME
 
 # ----------------------------------------------------------------------------
 # YOUR CODE ABOVE THIS LINE
