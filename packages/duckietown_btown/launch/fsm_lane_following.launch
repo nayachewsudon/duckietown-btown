@@ -1,0 +1,58 @@
+<launch>
+    <arg name="veh" doc="Name of vehicle. ex: duckiebot123"/>
+    
+    <!-- Anti-Instagram Color Correction -->
+    <include file="$(find anti_instagram)/launch/anti_instagram_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Line Detector -->
+    <include file="$(find line_detector)/launch/line_detector_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Lane Filter -->
+    <include file="$(find lane_filter)/launch/lane_filter_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Ground Projection -->
+    <include file="$(find ground_projection)/launch/ground_projection_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Lane Controller (for lane following) -->
+    <include file="$(find lane_control)/launch/lane_controller_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Stop Line Filter (for detecting stop lines at intersections) -->
+    <include file="$(find stop_line_filter)/launch/stop_line_filter_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- LED Emitter -->
+    <include file="$(find led_emitter)/launch/led_emitter_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Safe RL node -->
+    <include file="$(find safe_rl)/launch/safe_rl_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Unicorn Intersection node (handles intersection navigation) -->
+    <include file="$(find unicorn_intersection)/launch/unicorn_intersection_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+    </include>
+
+    <!-- Intersection Planner node (decides which turn to take) -->
+    <node ns="$(arg veh)" pkg="intersection_planner" type="intersection_planner_node.py" name="intersection_planner_node" output="screen" required="true"/>
+
+    <!-- FSM Node to manage state transitions using our_fsm.yaml -->
+    <include file="$(find fsm)/launch/fsm_node.launch">
+        <arg name="veh" value="$(arg veh)"/>
+        <arg name="param_file_name" value="our_fsm"/>
+    </include>
+
+</launch>
