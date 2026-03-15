@@ -12,11 +12,7 @@ dt-launchfile-init
 # NOTE: Use the variable DT_REPO_PATH to know the absolute path to your code
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking pro
 # launching FSM to control lane following with state management
-CAMERA_TOPIC_DEFAULT="camera_node"
-if [[ "${ROBOT_CONFIGURATION}" == DB21* ]]; then
-	CAMERA_TOPIC_DEFAULT="camera_driver_front_center"
-fi
-CAMERA_TOPIC="${CAMERA_TOPIC:-${CAMERA_TOPIC_DEFAULT}}"
+CAMERA_TOPIC="${CAMERA_TOPIC:-camera_node}"
 
 dt-exec roslaunch --wait duckietown_btown fsm_lane_following.launch \
 	veh:=${VEHICLE_NAME} \

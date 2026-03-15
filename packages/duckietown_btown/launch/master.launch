@@ -149,6 +149,7 @@
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg line_detector_param_file_name)"/>
                 <arg name="traffic_mode" value="$(arg traffic_mode)"/>
+                <arg name="camera_topic" value="$(arg camera_topic)"/>
             </include>
         </group>
 
@@ -160,6 +161,7 @@
             <include file="$(find ground_projection)/launch/ground_projection_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
+                <arg name="camera_topic" value="$(arg camera_topic)"/>
             </include>
             <group if="$(arg visualization)">
                 <remap from="line_segment_visualizer_node/segment_list" to="ground_projection_node/lineseglist_out"/>
