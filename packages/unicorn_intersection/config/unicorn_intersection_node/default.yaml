@@ -1,24 +1,22 @@
 use_stop_pose: False
-num_waypoints: 6
+num_waypoints: 4
 visualization: True
-speed: 0.09
-turn_omega_kp: 2.2
-turn_omega_max: 5.0
+speed: 0.12
 
 canonical_goal_pose_right: {
-  x: 0.24,
-  y: -0.24,
+  x: 0.3,
+  y: -0.3,
   theta: -1.57,
 }
 
 canonical_goal_pose_left: {
-  x: 0.40,
-  y: 0.40,
+  x: 0.5,
+  y: 0.5,
   theta: 1.57,
 }
 
 canonical_goal_pose_straight: {
-  x: 0.50,
+  x: 0.6,
   y: 0.0,
   theta: 0.0,
 }
