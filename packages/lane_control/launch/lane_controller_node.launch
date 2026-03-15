@@ -12,6 +12,11 @@
             <param name="veh" value="$(arg veh)" />
             <rosparam command="load"
                       file="$(find lane_control)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
+            <remap from="~lane_pose" to="lane_filter_node/lane_pose"/>
+            <remap from="~stop_line_reading" to="stop_line_filter_node/stop_line_reading"/>
+            <remap from="~obstacle_distance_reading" to="obstacle_detection_node/obstacle_distance_reading"/>
+            <remap from="~wheels_cmd" to="wheels_driver_node/wheels_cmd_executed"/>
+            <remap from="~car_cmd" to="car_cmd_switch_node/cmd"/>
         </node>
     </group>
 

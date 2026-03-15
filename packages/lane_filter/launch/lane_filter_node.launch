@@ -9,6 +9,9 @@
     <group ns="$(arg veh)">
         <node name="$(arg node_name)" pkg="$(arg pkg_name)" type="$(arg node_name).py" output="screen" required="true">
             <rosparam command="load" file="$(find lane_filter)/config/$(arg node_name)/$(arg param_file_name).yaml"/>
+            <remap from="~segment_list" to="ground_projection_node/lineseglist_out"/>
+            <remap from="~left_wheel_encoder_driver_node/tick" to="left_wheel_encoder_node/tick"/>
+            <remap from="~right_wheel_encoder_driver_node/tick" to="right_wheel_encoder_node/tick"/>
         </node>
     </group>
 

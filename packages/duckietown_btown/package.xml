@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>duckietown_btown</name>
+  <version>0.0.0</version>
+  <description>B-Town Duckietown package with FSM-based lane following and intersection handling</description>
+
+  <maintainer email="btown@duckietown.org">B-Town Team</maintainer>
+  <license>GPLv3</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>fsm</depend>
+  <depend>anti_instagram</depend>
+  <depend>line_detector</depend>
+  <depend>lane_filter</depend>
+  <depend>ground_projection</depend>
+  <depend>lane_control</depend>
+  <depend>led_emitter</depend>
+  <depend>stop_line_filter</depend>
+  <depend>safe_rl</depend>
+  <depend>unicorn_intersection</depend>
+  <depend>intersection_planner</depend>
+
+</package>
