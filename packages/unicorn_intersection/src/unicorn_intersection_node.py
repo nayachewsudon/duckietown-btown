@@ -386,27 +386,35 @@ class UnicornIntersectionNode(DTROS):
         else:
             return theta      
 
-    @staticmethod
-    def shortest_angular_distance(from_angle, to_angle):
-        return math.atan2(math.sin(to_angle - from_angle), math.cos(to_angle - from_angle))
-
     def path_plan(self,obstacle,lane):
             return 0
 
     def compute_omega(self,targetxy,x,y,current,dt):
         factor = 1 # PARAM 
         target_yaw = np.arctan2( (targetxy[1] - y),(targetxy[0]- x) )
-        omega = factor * self.shortest_angular_distance(current, target_yaw)
+        omega = factor* ((target_yaw - current))
 
         return omega
 
     def check_point(self, current_point, target_point):
-        intermediate_threshold = 0.08
-        final_threshold = 0.05
-        dist = np.linalg.norm(current_point - target_point)
-        is_final_waypoint = self.iter_ == (len(self.reference_trajectory) - 1)
-        threshold = final_threshold if is_final_waypoint else intermediate_threshold
-        return dist < threshold
+        threshold = 0.1
+        threshold_x = 0.08
+        dist_x = np.zeros((1,2))
+        dist_x[0, 0] = (current_point[0] - self.alpha) - target_point[0]
+        dist_x[0, 1] = (current_point[1]) - target_point[1]
+        if self.iter_ == (self.num_waypoints - 1):
+            if abs(dist_x[0, 1]) < threshold_x:
+                return True
+
+            return False
+
+        else:
+            dist = np.sqrt(((current_point[0]-self.alpha) - target_point[0])**2 + ((current_point[1]-self.alpha) - target_point[1])**2 )
+
+            if (abs(dist_x[0,0])) > threshold_x or (dist) < threshold:
+                return True
+
+            return False
 
 if __name__ == "__main__":
     unicorn_intersection_node = UnicornIntersectionNode(node_name="unicorn_intersection_node")
