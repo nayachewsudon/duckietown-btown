@@ -12,39 +12,39 @@ events: # Maps from subscribing topic to signal ids
     msg_type: "BoolStamped"
     trigger: True
 
-  after_emergency_stop:
-    topic:
-    msg_type:
-    trigger:
-  object_detected:
-    topic: 
-    msg_type:
-    trigger:
+#  after_emergency_stop:
+#    topic: ""
+  #  msg_type: ""
+ #   trigger: False
+ # object_detected:
+  #  topic: ""
+   # msg_type: ""
+    #trigger: False
 
-  object_avoided:
-    topic:
-    msg_type:
-    trigger:
+  #object_avoided:
+   # topic: ""
+   # msg_type: ""
+    #trigger: False
 
-  collision_detected:
-    topic:
-    msg_type:
-    trigger:
-  
-  tasks_accomplished:
-    topic:
-    msg_type:
-    trigger:
+  #collision_detected:
+   # topic: ""
+    #msg_type: ""
+    #trigger: False
 
-  timeout:
-    topic:
-    msg_type:
-    trigger:
+ # tasks_accomplished:
+  #  topic: ""
+   # msg_type: ""
+   # trigger: False
+
+ # timeout:
+  #  topic: ""
+   # msg_type: ""
+   # trigger: False
   # this is for training the rl agent
-  ep_reset:
-    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
-    msg_type:
-    trigger:
+ # ep_reset:
+  #  topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+   # msg_type: ""
+   # trigger: False
 
 # Define nodes
 nodes:
@@ -55,13 +55,13 @@ nodes:
   stop_line_filter_node: "stop_line_filter_node/switch"
   lane_controller_node: "lane_controller_node/switch"
   led_emitter_node: "led_emitter_node/switch"
-  safe_rl: "safe_rl_node/switch"
+#  safe_rl: "safe_rl/switch"
   unicorn_intersection_node: "unicorn_intersection_node/switch"
   intersection_planner_node: "intersection_planner_node/switch"
 
 
 # Define global state transitiobs
-global_transitions:
+#global_transitions:
 
 # Define states
 
@@ -69,7 +69,7 @@ states:
   LANE_FOLLOWING:
     transitions:
       at_stop_line: "ARRIVE_AT_STOP_LINE"
-      object_detected: "OBJECT_AVOIDANCE"
+#      object_detected: "OBJECT_AVOIDANCE"
     active_nodes:
       - anti_instagram
       - line_detector_node
@@ -79,17 +79,17 @@ states:
       - led_emitter_node
     lights: "WHITE"
 
-  EMERGENCY_STOP:
-    transitions:
-      after_emergency_stop: "LANE_FOLLOWING"
-    active_nodes:
-      - lane_controller_node
-      - ground_projection_node
-      - led_emitter_node
-    lights: "RED"
+ # EMERGENCY_STOP:
+  #  transitions:
+   #   after_emergency_stop: "LANE_FOLLOWING"
+    #active_nodes:
+     # - lane_controller_node
+      #- ground_projection_node
+      #- led_emitter_node
+    #lights: "RED"
 
   ARRIVE_AT_STOP_LINE:
-    transitions: 
+    transitions:
       after_stop_line: "LANE_FOLLOWING"
     active_nodes:
       - stop_line_filter_node
@@ -101,17 +101,15 @@ states:
       - intersection_planner_node
     lights: "YELLOW"
 
-  EPISODE_RESET:
-    transitions:
-    active_nodes:
-    lights: "RED"
+ # EPISODE_RESET:
+  #  transitions: {}
+   # active_nodes: []
+    #lights: "RED"
 
-  OBJECT_AVOIDANCE:
-    transitions:
-      tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
-      object_avoided: LANE_FOLLOWING
-      collision_detected: EMERGENCY_STOP
-    active_nodes:
-    lights: "BLUE"
-
-
+  #OBJECT_AVOIDANCE:
+   # transitions:
+      #tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
+      #object_avoided: "LANE_FOLLOWING"
+     # collision_detected: "EMERGENCY_STOP"
+    #active_nodes:
+    #lights: "BLUE"
