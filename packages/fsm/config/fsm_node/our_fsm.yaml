@@ -55,6 +55,7 @@ nodes:
   stop_line_filter_node: "stop_line_filter_node/switch"
   lane_controller_node: "lane_controller_node/switch"
   led_emitter_node: "led_emitter_node/switch"
+  intersection_planner_node: "intersection_planner_node/switch"
 #  safe_rl: "safe_rl/switch"
   unicorn_intersection_node: "unicorn_intersection_node/switch"
 
@@ -77,6 +78,7 @@ states:
       - stop_line_filter_node
       - lane_controller_node
       - led_emitter_node
+      - unicorn_intersection_node
     lights: "WHITE"
 
  # EMERGENCY_STOP:
@@ -98,6 +100,7 @@ states:
       - line_detector_node
       - ground_projection_node
       - unicorn_intersection_node
+      - intersection_planner_node
     lights: "YELLOW"
 
  # EPISODE_RESET:

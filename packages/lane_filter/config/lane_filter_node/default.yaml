@@ -22,5 +22,5 @@ lane_filter_histogram_configuration:
   sigma_d_mask: 0.1
   sigma_phi_mask: 0.2
   range_min: 0.2
-  range_est: 0.45 #0.33
+  range_est: 0.33
   range_max: 0.6
