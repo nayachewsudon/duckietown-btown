@@ -71,6 +71,9 @@ class UnicornIntersectionNode(DTROS):
         )
         self.ts_encoders.registerCallback(self.cb_ts_encoders)
 
+        # Periodic control fallback (used when encoder callbacks are stale/missing)
+        self.control_timer = rospy.Timer(rospy.Duration.from_sec(0.05), self.cb_control_timer)
+
         ## update Parameters timer
         self.params_update = rospy.Timer(rospy.Duration.from_sec(1.0), self.updateParams)
 
@@ -98,6 +101,8 @@ class UnicornIntersectionNode(DTROS):
             rospy.loginfo("[unicorn_intersection_node] We have what we need, calculating reference trajectory")
             self.reference_trajectory = self.calculate_goal_trajectory()
             rospy.loginfo(f"[unicorn_intersection_node] Reference trajectory calculated: {self.reference_trajectory}")
+            self.iter_ = 0
+            self.last_control_time = rospy.get_time()
             self.internal_state = "EXECUTING"
         else:
             rospy.loginfo(f"[unicorn_intersection_node] We don't have what we need yet: "
@@ -169,6 +174,7 @@ class UnicornIntersectionNode(DTROS):
         self.right_encoder_last = None
         self.encoders_timestamp_last = None
         self.encoders_timestamp_last_local = None
+        self.last_control_time = None
         self.timestamp = None
         self.x = 0.0
         self.y = 0.0
@@ -183,8 +189,38 @@ class UnicornIntersectionNode(DTROS):
         self.iter_ = 0
         self.final_state = 0
 
+    def cb_control_timer(self, _event):
+        if self.internal_state != "EXECUTING":
+            return
+
+        if not self.reference_trajectory or self.iter_ >= len(self.reference_trajectory):
+            return
+
+        now = rospy.get_time()
+        if self.last_control_time is None:
+            self.last_control_time = now
+            return
+
+        dt = now - self.last_control_time
+        if dt <= 0:
+            return
+        self.last_control_time = now
+
+        # If encoders updated recently, encoder callback is driving control already.
+        if self.encoders_timestamp_last_local is not None and (now - self.encoders_timestamp_last_local) < 0.15:
+            return
+
+        rospy.logwarn_throttle(
+            1.0,
+            "[unicorn_intersection_node] No fresh encoder updates; using open-loop intersection control"
+        )
+        self.run_control_step(dt, integrate_open_loop=True)
+
     def cb_ts_encoders(self, left_encoder, right_encoder):
         if self.internal_state != "EXECUTING":
+            return
+
+        if not self.reference_trajectory or self.iter_ >= len(self.reference_trajectory):
             return
 
         timestamp_now = rospy.get_time()
@@ -257,19 +293,38 @@ class UnicornIntersectionNode(DTROS):
         self.encoders_timestamp_last = timestamp
         self.encoders_timestamp_last_local = timestamp_now
 
+        # Keep control timer phase aligned with encoder-driven updates.
+        self.last_control_time = timestamp_now
+
+        self.run_control_step(dt, integrate_open_loop=False)
+
+    def run_control_step(self, dt, integrate_open_loop=False):
+        if not self.reference_trajectory or self.iter_ >= len(self.reference_trajectory):
+            return
+
         car_control_msg = Twist2DStamped()
-        #TODO
         car_control_msg.header.stamp = rospy.Time.now()
         car_control_msg.header.seq = 0
 
         # Add commands to car message
+        target_point = self.reference_trajectory[self.iter_]
         car_control_msg.v = self.speed
-        car_control_msg.omega = self.compute_omega(self.reference_trajectory[self.iter_],self.x,self.y,self.yaw,dt)
+        car_control_msg.omega = self.compute_omega(target_point, self.x, self.y, self.yaw, dt)
         self.car_cmd.publish(car_control_msg)
+        rospy.loginfo_throttle(
+            1.0,
+            f"[unicorn_intersection_node] control step: wp={self.iter_ + 1}/{len(self.reference_trajectory)} "
+            f"v={car_control_msg.v:.3f} omega={car_control_msg.omega:.3f} x={self.x:.3f} y={self.y:.3f}"
+        )
 
-        if self.check_point( np.array([self.x,self.y]),self.reference_trajectory[self.iter_] ):
+        if integrate_open_loop:
+            self.yaw = self.angle_clamp(self.yaw + car_control_msg.omega * dt)
+            self.x = self.x + car_control_msg.v * dt * math.cos(self.yaw)
+            self.y = self.y + car_control_msg.v * dt * math.sin(self.yaw)
+
+        if self.check_point(np.array([self.x, self.y]), target_point):
             self.iter_ += 1
-            if self.iter_ == self.num_waypoints:
+            if self.iter_ >= len(self.reference_trajectory):
                 self.internal_state = "READY"
                 self.stop_line_pose_received = False
                 self.turn_type_received = False
@@ -331,35 +386,27 @@ class UnicornIntersectionNode(DTROS):
         else:
             return theta      
 
+    @staticmethod
+    def shortest_angular_distance(from_angle, to_angle):
+        return math.atan2(math.sin(to_angle - from_angle), math.cos(to_angle - from_angle))
+
     def path_plan(self,obstacle,lane):
             return 0
 
     def compute_omega(self,targetxy,x,y,current,dt):
         factor = 1 # PARAM 
         target_yaw = np.arctan2( (targetxy[1] - y),(targetxy[0]- x) )
-        omega = factor* ((target_yaw - current))
+        omega = factor * self.shortest_angular_distance(current, target_yaw)
 
         return omega
 
     def check_point(self, current_point, target_point):
-        threshold = 0.1
-        threshold_x = 0.08
-        dist_x = np.zeros((1,2))
-        dist_x[0, 0] = (current_point[0] - self.alpha) - target_point[0]
-        dist_x[0, 1] = (current_point[1]) - target_point[1]
-        if self.iter_ == (self.num_waypoints - 1):
-            if abs(dist_x[0, 1]) < threshold_x:
-                return True
-
-            return False
-
-        else:
-            dist = np.sqrt(((current_point[0]-self.alpha) - target_point[0])**2 + ((current_point[1]-self.alpha) - target_point[1])**2 )
-
-            if (abs(dist_x[0,0])) > threshold_x or (dist) < threshold:
-                return True
-
-            return False
+        intermediate_threshold = 0.08
+        final_threshold = 0.05
+        dist = np.linalg.norm(current_point - target_point)
+        is_final_waypoint = self.iter_ == (len(self.reference_trajectory) - 1)
+        threshold = final_threshold if is_final_waypoint else intermediate_threshold
+        return dist < threshold
 
 if __name__ == "__main__":
     unicorn_intersection_node = UnicornIntersectionNode(node_name="unicorn_intersection_node")
