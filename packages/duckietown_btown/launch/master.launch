@@ -10,7 +10,8 @@
     <arg name="demo_name" /> <!-- this is required  used for demo specific configs like fsm -->
 	<arg name="traffic_mode" doc="Left/Right-hand traffic" default="RHT"/>
 	<arg name="config" default="baseline" />
-	<arg name="camera_topic" default="camera_node"/>
+    <arg name="camera_topic" default="$(optenv CAMERA_TOPIC camera_node)"
+         doc="Camera topic prefix (without vehicle namespace)"/>
 	<arg name="param_file_name" default="default" />
 	<arg name="apriltags_param_file_name" default="$(arg param_file_name)" />
 	<arg name="fsm_file_name" default="$(arg demo_name)" />
@@ -374,7 +375,7 @@
 
     <!-- Start Communication (New intersection coorditation) -->
     <group if="$(arg communication)">
-        <remap from="communication_node/image_in" to="camera_node/image/compressed"/>
+        <remap from="communication_node/image_in" to="$(arg camera_topic)/image/compressed"/>
         <remap from="communication_node/intersection_type_in" to="apriltag_postprocessing_node/apriltags_out"/>
         <remap from="communication_node/set_custom_pattern" to="led_emitter_node/set_custom_pattern"/>
         <include file="$(find communication)/launch/communication_node.launch">
@@ -451,10 +452,10 @@
 
     <!-- Start anti-instagram / LF, IN -->
     <group if="$(arg anti_instagram)">
-        <remap from="anti_instagram_node/uncorrected_image/compressed" to="$(arg camera_topic)/image/compressed"/>
         <!-- NOT LOADING PARAMS FROM A YAML FILE -->
         <include file="$(find anti_instagram)/launch/anti_instagram_node.launch">
             <arg name="veh" value="$(arg veh)"/>
+            <arg name="camera_topic" value="$(arg camera_topic)"/>
             <!-- <arg name="ai_interval" value="$(arg ai_interval)"/>-->
         </include>
     </group>
