@@ -414,7 +414,6 @@
     <group if="$(arg unicorn_intersection)">
         <remap from="unicorn_intersection_node/fsm_state" to="fsm_node/mode"/>
         <remap from="unicorn_intersection_node/intersection_go" to="coordinator_node/intersection_go"/>
-        <remap from="unicorn_intersection_node/intersection_done" to="intersection_navigation_node/intersection_done"/>
         <remap from="unicorn_intersection_node/stop_line_reading" to="stop_line_filter_node/stop_line_reading"/>
         <remap from="unicorn_intersection_node/left_wheel_encoder_driver_node/tick" to="left_wheel_encoder_driver_node/tick"/>
         <remap from="unicorn_intersection_node/right_wheel_encoder_driver_node/tick" to="right_wheel_encoder_driver_node/tick"/>
