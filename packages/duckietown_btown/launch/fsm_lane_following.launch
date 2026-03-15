@@ -18,6 +18,7 @@
         <arg name="/LED/emitter" value="true"/>
         
         <arg name="unicorn_intersection" value="true"/>
-        <arg name="visualization" value="true" />
+	<arg name="visualization" value="false" /> 
+	<arg name="apriltags" value="false" />
     </include>
 </launch>
