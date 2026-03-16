@@ -330,6 +330,7 @@ class UnicornIntersectionNode(DTROS):
                 self.turn_type_received = False
                 # Publish intersection done
                 msg_done = BoolStamped()
+                msg_done.header.stamp = rospy.Time.now() #ADDED THIS
                 msg_done.data = True
                 self.pub_int_done.publish(msg_done)
                 self.reset_odometry()
