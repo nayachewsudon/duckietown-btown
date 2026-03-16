@@ -30,6 +30,8 @@ class SafeRLNode(DTROS):
         #Topic from car_cmd
         self.sub_car_cmd = rospy.Subscriber("lane_controller_node/car_cmd", Twist2DStamped, self.cb_car_cmd)
 
+        #Publisher topic: 
+        self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
         #Variables
         self.tof_distance = float('inf')
         self.current_velocity = 0.0
@@ -131,8 +133,60 @@ class SafeRLNode(DTROS):
     
     #TODO: Creating the main RL Loop
     def step(self):
-        pass
-    
+        #1. Observe current state
+        state = self.state_observation()
+
+        #2. Agent picks action
+        action = self.agent.select_action(state)
+
+        #3. Execute action -> send waypoints to avoider
+        self.execute_action(action)
+
+        #4. Wait for avoider to finish
+        rate = rospy.Rate(10)
+        while not self.object_avoided and self.switch:
+            rate.sleep()
+        
+        #5. Observe new state
+        new_state = self.state_observation()
+
+        #6. Compute reward
+        self.compute_reward()
+        reward = self.reward
+
+        #7. Check if obstacle is cleared
+        done = self.check_obstacle_cleared()
+
+        #8. Store in replay buffer
+        self.replay_buffer.add((state, new_state, action, reward, done))
+
+        #9. Train agent
+        if len(self.replay_buffer.storage) > 100: 
+            self.agent.train(self.replay_buffer, iterations=1)
+
+        #10. Reset flags for next step
+        self.object_avoided = False
+        self.reward = 0
+
+        # 11. 
+        if done: #Check_obstacle_cleared() returned True = avoiedr done and ToF clear
+            msg - BoolStamped()
+            msg.header.stamp = rospy.Time.now()
+            msg.data = True
+            self.pub_object_avoided.publish(msg) #We tell FSM it's safe to return to lane following
+
+        return done
+
+    def execute_action(self, action):
+        #action = [v, omega]
+        #convert to 3 waypoints for avoider
+        v, omega = action[0], action[1]
+
+        msg = Polygon()
+        p1 = Point32()
+        p1.x = 0.2
+
+
     def check_obstacle_cleared(self):
         CRITICAL_DISTANCE = 0.2
         if self.object_avoided and self.tof_distance > CRITICAL_DISTANCE:
