@@ -54,18 +54,68 @@ class StopLineFilterNode(DTROS):
 
         ## state vars
         self.lane_pose = LanePose()
+        self.ignore_until = 0.0
+        self.awaiting_clearance = False
+        self.clear_frame_count = 0
+        self.required_clear_frames = 3
+        self.fsm_state = ""
+        self.prev_fsm_state = ""
+        trigger_states = rospy.get_param("~stopline_trigger_states", ["LANE_FOLLOWING"])
+        if isinstance(trigger_states, str):
+            trigger_states = [trigger_states]
+        self.stopline_trigger_states = set(trigger_states)
 
 
         ## publishers and subscribers
         self.sub_segs = rospy.Subscriber("~segment_list", SegmentList, self.cb_segments)
         self.sub_lane = rospy.Subscriber("~lane_pose", LanePose, self.cb_lane_pose)
+        self.sub_fsm_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_fsm_mode, queue_size=1)
         self.pub_stop_line_reading = rospy.Publisher("~stop_line_reading", StopLineReading, queue_size=1, latch=True)
         self.pub_at_stop_line = rospy.Publisher("~at_stop_line", BoolStamped, queue_size=1)
+
+    def cb_fsm_mode(self, fsm_state_msg):
+        self.prev_fsm_state = self.fsm_state
+        self.fsm_state = fsm_state_msg.state
+
+        # Generic cooldown: whenever we re-enter one of the trigger states from another state,
+        # suppress stop-line events briefly to avoid immediate retrigger at multi-way intersections.
+        if (
+            self.prev_fsm_state
+            and self.prev_fsm_state != self.fsm_state
+            and self.fsm_state in self.stopline_trigger_states
+        ):
+            self.activate_cooldown(
+                f"FSM transitioned {self.prev_fsm_state} -> {self.fsm_state}"
+            )
+
+    def activate_cooldown(self, reason):
+        self.ignore_until = rospy.get_time() + self.off_time.value
+        self.awaiting_clearance = True
+        self.clear_frame_count = 0
+
+        # Clear the latched reading immediately so downstream nodes do not keep stale at_stop_line data.
+        clear_msg = StopLineReading()
+        clear_msg.header.stamp = rospy.Time.now()
+        clear_msg.stop_line_detected = False
+        clear_msg.at_stop_line = False
+        self.pub_stop_line_reading.publish(clear_msg)
+
+        rospy.loginfo(
+            f"[{self.node_name}] {reason}; suppressing stop-line detection for {self.off_time.value:.2f}s"
+        )
 
     def cb_lane_pose(self, lane_pose_msg):
         self.lane_pose = lane_pose_msg
 
     def cb_segments(self, segment_list_msg):
+        stop_line_reading_msg = StopLineReading()
+        stop_line_reading_msg.header.stamp = segment_list_msg.header.stamp
+
+        if rospy.get_time() < self.ignore_until:
+            stop_line_reading_msg.stop_line_detected = False
+            stop_line_reading_msg.at_stop_line = False
+            self.pub_stop_line_reading.publish(stop_line_reading_msg)
+            return
 
 
         good_seg_count = 0
@@ -88,14 +138,27 @@ class StopLineFilterNode(DTROS):
             stop_line_x_accumulator += avg_x
             good_seg_count += 1.0
 
-        stop_line_reading_msg = StopLineReading()
-        stop_line_reading_msg.header.stamp = segment_list_msg.header.stamp
         if good_seg_count < self.min_segs.value:
+            if self.awaiting_clearance:
+                self.clear_frame_count += 1
+                if self.clear_frame_count >= self.required_clear_frames:
+                    self.awaiting_clearance = False
+                    rospy.loginfo(
+                        f"[{self.node_name}] stop-line detector re-armed after {self.clear_frame_count} clear frames"
+                    )
+
             stop_line_reading_msg.stop_line_detected = False
             stop_line_reading_msg.at_stop_line = False
             self.pub_stop_line_reading.publish(stop_line_reading_msg)
 
         else:
+            if self.awaiting_clearance:
+                self.clear_frame_count = 0
+                stop_line_reading_msg.stop_line_detected = False
+                stop_line_reading_msg.at_stop_line = False
+                self.pub_stop_line_reading.publish(stop_line_reading_msg)
+                return
+
             stop_line_reading_msg.stop_line_detected = True
             stop_pose = Pose2D()
             stop_pose.x = - stop_line_x_accumulator / good_seg_count
@@ -108,11 +171,17 @@ class StopLineFilterNode(DTROS):
                 -stop_pose.x < self.stop_distance.value
 
             self.pub_stop_line_reading.publish(stop_line_reading_msg)
-            if stop_line_reading_msg.at_stop_line:
+            fsm_allows_trigger = (not self.fsm_state) or (self.fsm_state in self.stopline_trigger_states)
+            if stop_line_reading_msg.at_stop_line and fsm_allows_trigger:
                 msg = BoolStamped()
                 msg.header.stamp = stop_line_reading_msg.header.stamp
                 msg.data = True
                 self.pub_at_stop_line.publish(msg)
+            elif stop_line_reading_msg.at_stop_line and not fsm_allows_trigger:
+                rospy.loginfo_throttle(
+                    1.0,
+                    f"[{self.node_name}] stop line seen but FSM state '{self.fsm_state}' is not trigger-enabled"
+                )
 
     def to_lane_frame(self, point):
         p_homo = np.array([point.x, point.y, 1])

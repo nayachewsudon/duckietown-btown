@@ -2,3 +2,4 @@ stop_distance: 0.12
 min_segs: 6
 off_time: 2
 max_y: 0.2
+stopline_trigger_states: ["LANE_FOLLOWING"]
