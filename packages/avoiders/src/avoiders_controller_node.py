@@ -81,8 +81,9 @@ class Avoider(DTROS): #comment here
 
         self.sub_encoder_left = message_filters.Subscriber("~left_wheel_encoder_node/tick", WheelEncoderStamped)
         self.sub_encoder_right = message_filters.Subscriber("~right_wheel_encoder_node/tick", WheelEncoderStamped)
+        
         #New sub to object detection node
-        self.sub_obstacle_
+        #self.sub_obstacle_
 
         self.ts_encoders = message_filters.ApproximateTimeSynchronizer(
             [self.sub_encoder_left, self.sub_encoder_right], 1, 1
