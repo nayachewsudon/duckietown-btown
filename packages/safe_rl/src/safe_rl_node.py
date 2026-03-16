@@ -170,7 +170,7 @@ class SafeRLNode(DTROS):
 
         # 11. 
         if done: #Check_obstacle_cleared() returned True = avoiedr done and ToF clear
-            msg - BoolStamped()
+            msg = BoolStamped()
             msg.header.stamp = rospy.Time.now()
             msg.data = True
             self.pub_object_avoided.publish(msg) #We tell FSM it's safe to return to lane following
