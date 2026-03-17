@@ -2,6 +2,7 @@
 import rospy
 from duckietown_msgs.msg import BoolStamped, TurnIDandType, SegmentList, Segment
 from duckietown.dtros import DTROS, NodeType
+import threading
 import random
 
 """Based on the detected intersection, decide which turn to take at random. A small node made to assist autonomous turning decisions in the AT_STOP_LINE state."""""
@@ -20,7 +21,9 @@ class IntersectionPlannerNode(DTROS):
         #Subscribes to line_detector_node Segment List. cb_segment_list defined below. 
         self.sub_segment_list = rospy.Subscriber("line_detector_node/segment_list", SegmentList, self.cb_segment_list)
 
+        #Variables
         self.valid_turns = []
+        self.already_planning = False
 
     """Identifies if the intersection is 3 or 4 way. X and Y are currently placeholders, run them by running rostopic echo line_detector_node/segment_list when stopping at an intersection and check actual x/y values"""
     def cb_segment_list(self, msg):
@@ -56,8 +59,45 @@ class IntersectionPlannerNode(DTROS):
         if has_straight: self.valid_turns.append(1)
         if has_right: self.valid_turns.append(2)
 
+    """on_switch_on and on_switch_off implicitly tracks the FSM state
+        on_switch_on -> FSM entered ARRIVE AT STOP LINE
+        on_switch_off -> FSM left ARRIVE AT STOP LINE
+        
+        When the FSM enters a state, it turns on all nodes in active_nodes, and when it leaves
+        it turns off nodes no longer in active_node. intersection_planner_node is active in arrive at stop line, but 
+        inactive in lane following
+        
+        FSM enters ARRIVE_AT_STOP_LINE
+        → sends True to intersection_planner/switch
+            → DTROS calls on_switch_on()
+                → THIS MEANS: we are in ARRIVE_AT_STOP_LINE
 
+        FSM leaves ARRIVE_AT_STOP_LINE
+            → sends False to intersection_planner/switch
+                → DTROS calls on_switch_off()
+                    → THIS MEANS: we left ARRIVE_AT_STOP_LINE
+        """
+    #MODIFIED: Should be called in DTROS
     def on_switch_on(self):
+        if self.already_planning:
+            rospy.loginfo("[intersection_planner] already planning, ignoring re-trigger")
+            return
+        
+        self.already_planning = True
+        rospy.loginfo("[intersection_planner] switched on, starting planning thread")
+        t = threading.Thread(target=self._plan_turn)
+        t.daemon = True
+        t.start()
+
+    #ADDED: Should be called in DTROS
+    def on_switch_off(self):
+        self.already_planning = False
+        rospy.loginfo("[intersection_planner] switched off, resetting already_planning")
+
+    #ADDED: Basically executes the original on_switch_on logic
+    def _plan_turn(self):
+        #self.already_planning = True
+
         rospy.sleep(1.0)
 
         #Fallback if no valid turns after 1 second
@@ -70,8 +110,12 @@ class IntersectionPlannerNode(DTROS):
         msg = TurnIDandType()
         msg.turn_type = chosen_turn
         self.pub_turn_id_and_type.publish(msg)
+        rospy.loginfo(f"[intersection_planner] published turn: {chosen_turn}")
 
         self.valid_turns = [] #Reset
+        #already_planning will stay True until on_switch_off resets it
+
+
 
 if __name__ == "__main__":
     node = IntersectionPlannerNode(node_name="intersection_planner_node")

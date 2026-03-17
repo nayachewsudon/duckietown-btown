@@ -54,16 +54,20 @@ class StopLineFilterNode(DTROS):
 
         ## state vars
         self.lane_pose = LanePose()
-
+        self.fsm_state = ""
 
         ## publishers and subscribers
         self.sub_segs = rospy.Subscriber("~segment_list", SegmentList, self.cb_segments)
         self.sub_lane = rospy.Subscriber("~lane_pose", LanePose, self.cb_lane_pose)
+        self.sub_fsm = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_fsm_state)
         self.pub_stop_line_reading = rospy.Publisher("~stop_line_reading", StopLineReading, queue_size=1, latch=True)
         self.pub_at_stop_line = rospy.Publisher("~at_stop_line", BoolStamped, queue_size=1)
 
     def cb_lane_pose(self, lane_pose_msg):
         self.lane_pose = lane_pose_msg
+
+    def cb_fsm_state(self, fsm_msg):
+        self.fsm_state = fsm_msg.state
 
     def cb_segments(self, segment_list_msg):
 
@@ -109,10 +113,12 @@ class StopLineFilterNode(DTROS):
 
             self.pub_stop_line_reading.publish(stop_line_reading_msg)
             if stop_line_reading_msg.at_stop_line:
-                msg = BoolStamped()
-                msg.header.stamp = stop_line_reading_msg.header.stamp
-                msg.data = True
-                self.pub_at_stop_line.publish(msg)
+                #MAIN IMPORTANT FIX: Only publish if NOT already navigating intersection
+                if self.fsm_state != "ARRIVE_AT_STOP_LINE":
+                    msg = BoolStamped()
+                    msg.header.stamp = stop_line_reading_msg.header.stamp
+                    msg.data = True
+                    self.pub_at_stop_line.publish(msg)
 
     def to_lane_frame(self, point):
         p_homo = np.array([point.x, point.y, 1])
