@@ -1,7 +1,7 @@
 ## This is TD3 - TwinDelay class
 ## Twin Delay Training
 
-""""Twin delayed implementation taken from:
+"""Twin delayed implementation taken from:
 Deep Reinforcement Learning Algorithms / Bipedal Walker - TwinDelayed-DDPG
 https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/blob/master/BipedalWalker-TwinDelayed-DDPG%20(TD3)/TwinDelayed.py"""
 
