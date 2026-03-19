@@ -120,7 +120,7 @@ class LaneFilterNode(DTROS):
 
 
         # Set up a timer for prediction (if we got encoder data) since that data can come very quickly
-        rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
+        #rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
         self.publishEstimate(self.last_update_header)
 
 
@@ -160,7 +160,7 @@ class LaneFilterNode(DTROS):
             self.right_encoder_initialized = True
         self.right_encoder_ticks_delta = right_encoder_msg.data - self.right_encoder_ticks
 
-    def cbPredict(self, event=None):
+    def cbPredict(self):
         if self.left_encoder_ticks_delta == 0 or self.right_encoder_ticks_delta == 0:
             return
         self.filter.predict(self.left_encoder_ticks_delta, self.right_encoder_ticks_delta)
