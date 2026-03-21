@@ -1,5 +1,6 @@
 <launch>
     <arg name="veh" doc="Name of vehicle. ex: duckiebot123"/>
+    
     <arg name="camera_topic" default="$(optenv CAMERA_TOPIC camera_node)"
          doc="Camera topic prefix (without vehicle namespace)"/>
     
@@ -9,7 +10,8 @@
         <arg name="demo_name" value="lane_following"/>
         
         <arg name="fsm" value="true"/>
-        <arg name="fsm_file_name" value="our_fsm"/> <arg name="anti_instagram" value="true" />
+        <arg name="fsm_file_name" value="our_fsm"/> 
+	<arg name="anti_instagram" value="true"/>
         <arg name="lane_following" value="true"/>
         <arg name="/lane_following/line_detection" value="true"/>
         <arg name="/lane_following/ground_projection" value="true"/>
