@@ -27,17 +27,17 @@ events: # Maps from subscribing topic to signal ids
 
   #Topic published by the RL
   collision_detected:
-    topic: "safe_rl__training_node/collision_detected"
+    topic: "safe_rl_training_node/collision_detected"
     msg_type: BoolStamped
     trigger: True
   
   tasks_accomplished:
-    topic: "safe_rl__training_node/object_avoided"
+    topic: "safe_rl_training_node/object_avoided"
     msg_type: BoolStamped
     trigger: True
 
   timeout:
-    topic: "safe_rl__training_node/timeout"
+    topic: "safe_rl_training_node/timeout"
     msg_type: BoolStamped
     trigger: True
 
@@ -71,7 +71,7 @@ global_transitions:
 states:
   LANE_FOLLOWING:
     transitions:
-      at_stop_line: "ARRIVE_AT_STOP_LINE"
+      #at_stop_line: "ARRIVE_AT_STOP_LINE"
       object_detected: "OBJECT_AVOIDANCE"
     active_nodes:
       - anti_instagram
@@ -107,7 +107,7 @@ states:
   EPISODE_RESET:
     transitions:
     active_nodes:
-      - safe_rl__training_node  
+      - safe_rl_training_node  
     lights: "RED"
 
   OBJECT_AVOIDANCE:
@@ -117,7 +117,7 @@ states:
       #collision_detected: EMERGENCY_STOP
     active_nodes:
       - tof_obstacle_detection_node
-      - safe_rl__training_node
+      - safe_rl_training_node
       - avoiders_controller_node
     lights: "BLUE"
 
