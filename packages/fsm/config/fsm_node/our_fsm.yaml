@@ -8,7 +8,7 @@ events: # Maps from subscribing topic to signal ids
     msg_type: "BoolStamped"
     trigger: True
   after_stop_line:
-    topic: "unicorn_intersection_node/intersection_done"
+    topic: "stop_line_bypass_node/intersection_done"
     msg_type: "BoolStamped"
     trigger: True
 
@@ -55,9 +55,8 @@ nodes:
   stop_line_filter_node: "stop_line_filter_node/switch"
   lane_controller_node: "lane_controller_node/switch"
   led_emitter_node: "led_emitter_node/switch"
-  intersection_planner_node: "intersection_planner_node/switch"
+  stop_line_bypass_node: "stop_line_bypass_node/switch"
 #  safe_rl: "safe_rl/switch"
-  unicorn_intersection_node: "unicorn_intersection_node/switch"
 
 
 # Define global state transitiobs
@@ -78,7 +77,6 @@ states:
       - stop_line_filter_node
       - lane_controller_node
       - led_emitter_node
-      - unicorn_intersection_node
     lights: "WHITE"
 
  # EMERGENCY_STOP:
@@ -99,8 +97,9 @@ states:
       - anti_instagram
       - line_detector_node
       - ground_projection_node
-      - unicorn_intersection_node
-      - intersection_planner_node
+      - stop_line_bypass_node
+      - lane_controller_node
+      - lane_filter_node
     lights: "YELLOW"
 
  # EPISODE_RESET:
