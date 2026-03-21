@@ -114,7 +114,7 @@
         <!-- FSM -->
         <!-- no remapping for FSM - full topic names specified in params yaml -->
         <remap from="fsm_node/set_pattern" to="led_emitter_node/set_pattern"/>
-        <include file="$(find fsm)/launch/fsm_node.launch">
+        <include file="$(find our_fsm)/launch/fsm_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
         </include>
@@ -128,7 +128,7 @@
 
         <group if="$(arg /fsm/logic_gate)">
           <!-- <remap from="coordinator_node/intersection_go" to="logic_gate_node/explicit_intersection_go" /> -->
-          <include file="$(find fsm)/launch/logic_gate_node.launch">
+          <include file="$(find our_fsm)/launch/logic_gate_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
           </include>
@@ -148,8 +148,6 @@
             <include file="$(find line_detector)/launch/line_detector_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg line_detector_param_file_name)"/>
-                <arg name="traffic_mode" value="$(arg traffic_mode)"/>
-                <arg name="camera_topic" value="$(arg camera_topic)"/>
             </include>
         </group>
 
@@ -161,7 +159,6 @@
             <include file="$(find ground_projection)/launch/ground_projection_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
-                <arg name="camera_topic" value="$(arg camera_topic)"/>
             </include>
             <group if="$(arg visualization)">
                 <remap from="line_segment_visualizer_node/segment_list" to="ground_projection_node/lineseglist_out"/>
@@ -460,7 +457,6 @@
         <!-- NOT LOADING PARAMS FROM A YAML FILE -->
         <include file="$(find anti_instagram)/launch/anti_instagram_node.launch">
             <arg name="veh" value="$(arg veh)"/>
-            <arg name="camera_topic" value="$(arg camera_topic)"/>
             <!-- <arg name="ai_interval" value="$(arg ai_interval)"/>-->
         </include>
     </group>

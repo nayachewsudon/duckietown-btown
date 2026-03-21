@@ -1,0 +1,19 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!assets
+!assets
+!assets/**
+!packages
+!packages/**
+!dependencies-apt.txt
+!dependencies-py3.*
+!launchers
+!launchers/*!packages
+!dependencies-apt.txt
+!dependencies-py3.*
+!launchers
+
+# YOUR FILES LISTED BELOW THIS LINE (IMPORTANT: PREPEND !)
+# ----------------------------------------------------------------------------

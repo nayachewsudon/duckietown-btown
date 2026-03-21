@@ -10,7 +10,7 @@ ARG ICON="cube"
 ARG ARCH
 ARG DISTRO=daffy
 ARG DOCKER_REGISTRY=docker.io
-ARG BASE_IMAGE=dt-ros-commons
+ARG BASE_IMAGE=dt-core
 ARG BASE_TAG=${DISTRO}-${ARCH}
 ARG LAUNCHER=default
 
@@ -50,7 +50,11 @@ ENV DT_MODULE_TYPE="${REPO_NAME}" \
     DT_LAUNCH_PATH="${LAUNCH_PATH}" \
     DT_LAUNCHER="${LAUNCHER}"
 
-# install apt dependencies
+
+# Update the ROS GPG key to the new one
+RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+
+# Now install apt dependencies
 COPY ./dependencies-apt.txt "${REPO_PATH}/"
 RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
 
