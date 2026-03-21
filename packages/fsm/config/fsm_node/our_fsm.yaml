@@ -1,0 +1,127 @@
+# Initial state of the FSM
+
+initial_state: "LANE_FOLLOWING"
+
+events: # Maps from subscribing topic to signal ids
+  at_stop_line:
+    topic: "stop_line_filter_node/at_stop_line"
+    msg_type: "BoolStamped"
+    trigger: True
+    
+  after_stop_line:
+    topic: "unicorn_intersection_node/intersection_done"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  after_emergency_stop:
+    topic: 
+    msg_type: 
+    trigger: True
+
+  object_detected:
+    topic: "tof_obstacle_detection_node/obstacle_detected"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  object_avoided:
+    topic: "tof_obstacle_detection_node/obstacle_cleared"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  #Topic published by the RL
+  collision_detected:
+    topic:
+    msg_type:
+    trigger:
+  
+  tasks_accomplished:
+    topic:
+    msg_type:
+    trigger:
+
+  timeout:
+    topic:
+    msg_type:
+    trigger:
+
+  # this is for training the rl agent
+  ep_reset:
+    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+    msg_type:
+    trigger:
+
+# Define nodes
+nodes:
+  anti_instagram: "anti_instagram_node/switch"
+  line_detector_node: "line_detector_node/switch"
+  lane_filter_node: "lane_filter_node/switch"
+  ground_projection_node: "ground_projection_node/switch"
+  stop_line_filter_node: "stop_line_filter_node/switch"
+  lane_controller_node: "lane_controller_node/switch"
+  led_emitter_node: "led_emitter_node/switch"
+  safe_rl_node: "safe_rl_node/switch"
+  unicorn_intersection_node: "unicorn_intersection_node/switch"
+  intersection_planner_node: "intersection_planner_node/switch"
+  avoiders_controller_node: "avoiders_controller_node/switch"
+  tof_obstacle_detection_node: "tof_obstacle_detection_node/switch"
+
+
+# Define global state transitiobs
+global_transitions:
+
+# Define states
+
+states:
+  LANE_FOLLOWING:
+    transitions:
+      at_stop_line: "ARRIVE_AT_STOP_LINE"
+      object_detected: "OBJECT_AVOIDANCE"
+    active_nodes:
+      - anti_instagram
+      - line_detector_node
+      - lane_filter_node
+      - ground_projection_node
+      - lane_controller_node
+      - led_emitter_node
+    lights: "WHITE"
+
+  EMERGENCY_STOP:
+    transitions:
+      after_emergency_stop: "LANE_FOLLOWING"
+    active_nodes:
+      - lane_controller_node
+      - ground_projection_node
+      - led_emitter_node
+    lights: "RED"
+
+  ARRIVE_AT_STOP_LINE:
+    transitions: 
+      after_stop_line: "LANE_FOLLOWING"
+    active_nodes:
+      - stop_line_filter_node
+      - led_emitter_node
+      - anti_instagram
+      - line_detector_node
+      - ground_projection_node
+      - unicorn_intersection_node
+      - intersection_planner_node
+    lights: "YELLOW"
+
+  EPISODE_RESET:
+    transitions:
+    active_nodes:
+      - safe_rl_node  
+    lights: "RED"
+
+  OBJECT_AVOIDANCE:
+    transitions:
+      tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
+      object_avoided: LANE_FOLLOWING
+      collision_detected: EMERGENCY_STOP
+    active_nodes:
+      - tof_obstacle_detection_node
+      - safe_rl_node
+      - avoiders_controller_node
+    lights: "BLUE"
+
+

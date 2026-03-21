@@ -1,0 +1,30 @@
+events: # Maps from subscribing topic to signal ids
+  collision_detected:
+    topic:
+    msg_type:
+    trigger:
+  
+  tasks_accomplished:
+    topic:
+    msg_type:
+    trigger:
+
+  timeout:
+    topic:
+    msg_type:
+    trigger:
+
+  ep_reset:
+    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+    msg_type:
+    trigger:
+
+
+gates:
+  tasks_accomplished_or_collision_detected_or_timeout:
+    gate_type: "OR"
+    inputs:
+      - tasks_accomplished
+      - collision_detected
+      - timeout
+    output_topic: "~tasks_accomplished_or_collision_detected_or_timeout"
