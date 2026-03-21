@@ -1,135 +1,220 @@
 #!/usr/bin/env python3
+import json
+
 import numpy as np
 
 import rospy
-from duckietown.dtros import DTParam, DTROS, NodeType, ParamType
-from duckietown_msgs.msg import BoolStamped, FSMState, LanePose, SegmentList, StopLineReading
-from geometry_msgs.msg import Pose2D
+from cv_bridge import CvBridge
+from duckietown.dtros import DTROS, NodeType, TopicType
+from duckietown_msgs.msg import FSMState, LanePose, SegmentList, Twist2DStamped
+from lane_filter import LaneFilterHistogram
+from sensor_msgs.msg import Image
+from std_msgs.msg import String
 
-class StopLineFilterNode(DTROS):
-    """
-    Calculates the relative pose of the robot to the stop line and emits an "at_stop_line" boolean if
-    the robot is close enough
+
+class LaneFilterNode(DTROS):
+    """Generates an estimate of the lane pose.
+
+    Creates a `lane_filter` to get estimates on `d` and `phi`, the lateral and heading deviation from the
+    center of the lane.
+    It gets the segments extracted by the line_detector as input and output the lane pose estimate.
+
 
     Args:
-        node_name (:obj:`str'): a unique, descriptive name for the node that ROS will use
+        node_name (:obj:`str`): a unique, descriptive name for the node that ROS will use
 
     Configuration:
-        stop_distance (:obj:`float'): How far from the stop line should we be in order to output the "at_stop_line"
-        output
-        min_segs (:obj:`int'): The minimum number of red line segments that should be detected to constitute a red line
-        detection
-        off_time (:obj:`float'): An amount of time to disable the stop line detection after we leave the stop
-        line and start navigating the intersection. Used so that the robot doesn't immediately redetect that it
-        is at a stop lane before navigating the intersection
-        max_y (:obj:`float'): The maximum offset in the `y` direction (orthogonal to the direction of the lane) to be
-        considered a valid stop line. Used so that we don't stop and stop lines in adjacent lanes
+        ~filter (:obj:`list`): A list of parameters for the lane pose estimation filter
+        ~debug (:obj:`bool`): A parameter to enable/disable the publishing of debug topics and images
 
     Subscribers:
         ~segment_list (:obj:`SegmentList`): The detected line segments from the line detector
-        TODO: subscribe to encoders to update the stop line pose after the stop line is out of the FOV
-        ~lane_pose (:obj:`LanePose'): The Lane Pose output from the lane filter
-        ~fsm_node/mode (:obj:`FSMState'): Our current state
+        ~car_cmd (:obj:`Twist2DStamped`): The car commands executed. Used for the predict step of the filter
+        ~change_params (:obj:`String`): A topic to temporarily changes filter parameters for a finite time
+        only
+        ~switch (:obj:``BoolStamped): A topic to turn on and off the node. WARNING : to be replaced with a
+        service call to the provided mother node switch service
+        ~fsm_mode (:obj:`FSMState`): A topic to change the state of the node. WARNING : currently not
+        implemented
 
     Publishers:
-        ~stop_line_reading (:obj:`StopLineReading'): Contains booleans for whether a stop line is detected and whether
-        whether we are the stop line (according to the stop distance), and a Pose2D that is our best estimate of the
-        robot pose relative to the stop line. I.e., the coordinate frame being centered on the middle of the
-        stop line with x going forward (down the lane), y going to the left (similar to lane filter), and theta going
-        from x to y (Right-hand rule)
+        ~lane_pose (:obj:`LanePose`): The computed lane pose estimate
+        ~belief_img (:obj:`Image`): A debug image that shows the filter's internal state
+        ~seglist_filtered (:obj:``SegmentList): a debug topic to send the filtered list of segments that
+        are considered as valid
 
     """
+
+    filter: LaneFilterHistogram
+    bridge: CvBridge
+
     def __init__(self, node_name):
-        # Initialize the DTROS parent class
-        super(StopLineFilterNode, self).__init__(
-            node_name=node_name,
-            node_type=NodeType.PERCEPTION,
-            fsm_controlled=True)
+        super(LaneFilterNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
-        # Initialize the parameters
-        self.stop_distance = DTParam("~stop_distance", param_type=ParamType.FLOAT)
-        self.min_segs = DTParam("~min_segs", param_type=ParamType.INT)
-        self.off_time = DTParam("~off_time", param_type=ParamType.FLOAT)
-        self.max_y = DTParam("~max_y", param_type=ParamType.FLOAT)
+        self._filter = rospy.get_param("~lane_filter_histogram_configuration", None)
+        self._debug = rospy.get_param("~debug", False)
 
-        ## state vars
-        self.lane_pose = LanePose()
-        self.fsm_state = ""
+        # Create the filter
+        self.filter = LaneFilterHistogram(**self._filter)
 
-        ## publishers and subscribers
-        self.sub_segs = rospy.Subscriber("~segment_list", SegmentList, self.cb_segments)
-        self.sub_lane = rospy.Subscriber("~lane_pose", LanePose, self.cb_lane_pose)
-        self.sub_fsm = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_fsm_state)
-        self.pub_stop_line_reading = rospy.Publisher("~stop_line_reading", StopLineReading, queue_size=1, latch=True)
-        self.pub_at_stop_line = rospy.Publisher("~at_stop_line", BoolStamped, queue_size=1)
+        # Creating cvBridge
+        self.bridge = CvBridge()
 
-    def cb_lane_pose(self, lane_pose_msg):
-        self.lane_pose = lane_pose_msg
+        self.t_last_update = rospy.get_time()
+        self.currentVelocity = None
 
-    def cb_fsm_state(self, fsm_msg):
-        self.fsm_state = fsm_msg.state
+        self.latencyArray = []
 
-    def cb_segments(self, segment_list_msg):
+        # Subscribers
+        self.sub = rospy.Subscriber("~segment_list", SegmentList, self.cbProcessSegments, queue_size=1)
 
+        self.sub_velocity = rospy.Subscriber("~car_cmd", Twist2DStamped, self.updateVelocity)
 
-        good_seg_count = 0
-        stop_line_x_accumulator = 0.0
-        for segment in segment_list_msg.segments:
-            if segment.color != segment.RED:
-                continue
-            if segment.points[0].x < 0 or segment.points[1].x < 0:  # the point is behind us
-                continue
+        self.sub_change_params = rospy.Subscriber("~change_params", String, self.cbTemporaryChangeParams)
 
-            p1_lane = self.to_lane_frame(segment.points[0])
-            p2_lane = self.to_lane_frame(segment.points[1])
-            avg_x = 0.5 * (p1_lane[0] + p2_lane[0])
-            avg_y = 0.5 * (p1_lane[1] + p2_lane[1])
+        # Publishers
+        self.pub_lane_pose = rospy.Publisher(
+            "~lane_pose", LanePose, queue_size=1, dt_topic_type=TopicType.PERCEPTION
+        )
 
-            # If the line is more than max_y offset in the y direction then it is
-            # not a stop line in our lane and we shouldn't count it
-            if np.abs(avg_y) > self.max_y.value:
-                continue
-            stop_line_x_accumulator += avg_x
-            good_seg_count += 1.0
+        self.pub_belief_img = rospy.Publisher(
+            "~belief_img", Image, queue_size=1, dt_topic_type=TopicType.DEBUG
+        )
 
-        stop_line_reading_msg = StopLineReading()
-        stop_line_reading_msg.header.stamp = segment_list_msg.header.stamp
-        if good_seg_count < self.min_segs.value:
-            stop_line_reading_msg.stop_line_detected = False
-            stop_line_reading_msg.at_stop_line = False
-            self.pub_stop_line_reading.publish(stop_line_reading_msg)
+        self.pub_seglist_filtered = rospy.Publisher(
+            "~seglist_filtered", SegmentList, queue_size=1, dt_topic_type=TopicType.DEBUG
+        )
 
-        else:
-            stop_line_reading_msg.stop_line_detected = True
-            stop_pose = Pose2D()
-            stop_pose.x = - stop_line_x_accumulator / good_seg_count
-            stop_pose.y = self.lane_pose.d
-            stop_pose.theta = self.lane_pose.phi
-            stop_line_reading_msg.stop_pose = stop_pose
+        # FSM
+        # self.sub_switch = rospy.Subscriber(
+        #     "~switch", BoolStamped, self.cbSwitch, queue_size=1)
+        self.sub_fsm_mode = rospy.Subscriber("~fsm_mode", FSMState, self.cbMode, queue_size=1)
 
-            # Only detect redline if y is within max_y distance:
-            stop_line_reading_msg.at_stop_line = \
-                -stop_pose.x < self.stop_distance.value
+    def cbTemporaryChangeParams(self, msg):
+        """Callback that changes temporarily the filter's parameters.
 
-            self.pub_stop_line_reading.publish(stop_line_reading_msg)
-            if stop_line_reading_msg.at_stop_line:
-                #MAIN IMPORTANT FIX: Only publish if NOT already navigating intersection
-                if self.fsm_state != "ARRIVE_AT_STOP_LINE":
-                    msg = BoolStamped()
-                    msg.header.stamp = stop_line_reading_msg.header.stamp
-                    msg.data = True
-                    self.pub_at_stop_line.publish(msg)
+        Args:
+            msg (:obj:`String`): list of the new parameters
 
-    def to_lane_frame(self, point):
-        p_homo = np.array([point.x, point.y, 1])
-        phi = self.lane_pose.phi
-        d = self.lane_pose.d
-        T = np.array([[np.cos(phi), -np.sin(phi), 0], [np.sin(phi), np.cos(phi), d], [0, 0, 1]])
-        p_new_homo = T.dot(p_homo)
-        p_new = p_new_homo[0:2]
-        return p_new
+        """
+        # This weird callback changes parameters only temporarily - used in the unicorn intersection.
+        # comment from 03/2020
+        data = json.loads(msg.data)
+        params = data["params"]
+        reset_time = data["time"]
+        # Set all paramters which need to be updated
+        for param_name in list(params.keys()):
+            param_val = params[param_name]
+            params[param_name] = eval("self.filter." + str(param_name))  # FIXME: really?
+            exec("self.filter." + str(param_name) + "=" + str(param_val))  # FIXME: really?
+
+        # Sleep for reset time
+        rospy.sleep(reset_time)
+
+        # Reset parameters to old values
+        for param_name in list(params.keys()):
+            param_val = params[param_name]
+
+            exec("self.filter." + str(param_name) + "=" + str(param_val))  # FIXME: really?
+
+    #    def nbSwitch(self, switch_msg):
+    #        """Callback to turn on/off the node
+    #
+    #        Args:
+    #            switch_msg (:obj:`BoolStamped`): message containing the on or off command
+    #
+    #        """
+    #        # All calls to this message should be replaced directly by the srvSwitch
+    #        request = SetBool()
+    #        request.data = switch_msg.data
+    #        eelf.nub_switch(request)
+
+    def cbProcessSegments(self, segment_list_msg):
+        """Callback to process the segments
+
+        Args:
+            segment_list_msg (:obj:`SegmentList`): message containing list of processed segments
+
+        """
+        # Get actual timestamp for latency measurement
+        timestamp_before_processing = rospy.Time.now()
+
+        # Step 1: predict
+        current_time = rospy.get_time()
+        if self.currentVelocity:
+            dt = current_time - self.t_last_update
+            self.filter.predict(dt=dt, v=self.currentVelocity.v, w=self.currentVelocity.omega)
+
+        self.t_last_update = current_time
+
+        # Step 2: update
+        self.filter.update(segment_list_msg.segments)
+
+        # Step 3: build messages and publish things
+        [d_max, phi_max] = self.filter.getEstimate()
+        # print "d_max = ", d_max
+        # print "phi_max = ", phi_max
+
+        # Getting the highest belief value from the belief matrix
+        max_val = self.filter.getMax()
+        # Comparing it to a minimum belief threshold to make sure we are certain enough of our estimate
+        in_lane = max_val > self.filter.min_max
+
+        # build lane pose message to send
+        lanePose = LanePose()
+        lanePose.header.stamp = segment_list_msg.header.stamp
+        lanePose.d = d_max
+        lanePose.phi = phi_max
+        lanePose.in_lane = in_lane
+        # XXX: is it always NORMAL?
+        lanePose.status = lanePose.NORMAL
+
+        self.pub_lane_pose.publish(lanePose)
+        self.debugOutput(segment_list_msg, d_max, phi_max, timestamp_before_processing)
+
+    def debugOutput(self, segment_list_msg, d_max, phi_max, timestamp_before_processing):
+        """Creates and publishes debug messages
+
+        Args:
+            segment_list_msg (:obj:`SegmentList`): message containing list of filtered segments
+            d_max (:obj:`float`): best estimate for d
+            phi_max (:obj:``float): best estimate for phi
+            timestamp_before_processing (:obj:`float`): timestamp dating from before the processing
+
+        """
+        if self._debug:
+            # Latency of Estimation including curvature estimation
+            estimation_latency_stamp = rospy.Time.now() - timestamp_before_processing
+            estimation_latency = estimation_latency_stamp.secs + estimation_latency_stamp.nsecs / 1e9
+            self.latencyArray.append(estimation_latency)
+
+            if len(self.latencyArray) >= 20:
+                self.latencyArray.pop(0)
+
+            # print "Latency of segment list: ", segment_latency
+            # self.loginfo(f"Mean latency of Estimation:................. {np.mean(self.latencyArray)}")
+
+            # Get the segments that agree with the best estimate and publish them
+            inlier_segments = self.filter.get_inlier_segments(segment_list_msg.segments, d_max, phi_max)
+            inlier_segments_msg = SegmentList()
+            inlier_segments_msg.header = segment_list_msg.header
+            inlier_segments_msg.segments = inlier_segments
+            self.pub_seglist_filtered.publish(inlier_segments_msg)
+
+            # Create belief image and publish it
+            belief_img = self.bridge.cv2_to_imgmsg(
+                np.array(255 * self.filter.belief).astype("uint8"), "mono8"
+            )
+            belief_img.header.stamp = segment_list_msg.header.stamp
+            self.pub_belief_img.publish(belief_img)
+
+    def cbMode(self, msg):
+        return  # TODO adjust self.active
+
+    def updateVelocity(self, twist_msg):
+        self.currentVelocity = twist_msg
 
 
 if __name__ == "__main__":
-    lane_filter_node = StopLineFilterNode(node_name="stop_line_filter")
+    lane_filter_node = LaneFilterNode(node_name="lane_filter_node")
     rospy.spin()

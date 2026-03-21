@@ -33,8 +33,7 @@ class TOFObstacleDetectionNode(DTROS):
     """
     def __init__(self, node_name):
         # Initialize the DTROS parent class
-        super(TOFObstacleDetectionNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION,
-                                                    fsm_controlled=True)
+        super(TOFObstacleDetectionNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         self._obstacle_present = False
         rospy.Subscriber('~front_center_tof/range', Range, self.cb_tof_range)

@@ -51,11 +51,7 @@ class LaneControllerNode(DTROS):
     def __init__(self, node_name):
 
         # Initialize the DTROS parent class
-        super(LaneControllerNode, self).__init__(
-            node_name=node_name,
-            node_type=NodeType.PERCEPTION,
-            fsm_controlled=False
-        )
+        super(LaneControllerNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         # Add the node parameters to the parameters dictionary
         # TODO: MAKE TO WORK WITH NEW DTROS PARAMETERS
@@ -72,7 +68,7 @@ class LaneControllerNode(DTROS):
         #self.params["~theta_thres"] = rospy.get_param("~theta_thres", None)
         #Breaking up the self.params["~theta_thres"] parameter for more finer tuning of phi
         self.params["~theta_thres_min"] = DTParam("~theta_thres_min", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)  #SUGGESTION mandatorizing the use of DTParam inplace of rospy.get_param for parameters in the entire dt-core repository as it allows active tuning while Robot is in action.
-        self.params["~theta_thres_max"] = DTParam("~theta_thres_max", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)
+        self.params["~theta_thres_max"] = DTParam("~theta_thres_max", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0) 
         self.params["~d_thres"] = rospy.get_param("~d_thres", None)
         self.params["~d_offset"] = rospy.get_param("~d_offset", None)
         self.params["~integral_bounds"] = rospy.get_param("~integral_bounds", None)
@@ -137,12 +133,9 @@ class LaneControllerNode(DTROS):
         Args:
             msg(:obj:`StopLineReading`): Message containing information about the virtual obstacle stopline.
         """
-        self.obstacle_stop_line_distance = np.sqrt(msg.stop_pose.x**2 + msg.stop_pose.y**2)
+        self.obstacle_stop_line_distance = np.sqrt(msg.stop_line_point.x**2 + msg.stop_line_point.y**2)
         self.obstacle_stop_line_detected = msg.stop_line_detected
         self.at_stop_line = msg.at_stop_line
-        if not self.obstacle_stop_line_detected:
-            self.obstacle_stop_line_distance = None
-
 
     def cbStopLineReading(self, msg):
         """Callback storing current distance to the next stopline, if one is detected.
@@ -150,12 +143,9 @@ class LaneControllerNode(DTROS):
         Args:
             msg (:obj:`StopLineReading`): Message containing information about the next stop line.
         """
-        self.stop_line_distance = -msg.stop_pose.x
+        self.stop_line_distance = np.sqrt(msg.stop_line_point.x**2 + msg.stop_line_point.y**2)
         self.stop_line_detected = msg.stop_line_detected
         self.at_obstacle_stop_line = msg.at_stop_line
-        if not self.stop_line_detected:
-            self.stop_line_distance = None
-
 
     def cbMode(self, fsm_state_msg):
 
@@ -226,9 +216,11 @@ class LaneControllerNode(DTROS):
 
             # We cap the error if it grows too large
             if np.abs(d_err) > self.params["~d_thres"]:
+                self.log("d_err too large, thresholding it!", "error")
                 d_err = np.sign(d_err) * self.params["~d_thres"]
-
+            
             if phi_err > self.params["~theta_thres_max"].value or phi_err < self.params["~theta_thres_min"].value:
+                self.log("phi_err too large/small, thresholding it!", "error")
                 phi_err = np.maximum(self.params["~theta_thres_min"].value, np.minimum(phi_err, self.params["~theta_thres_max"].value))
 
             wheels_cmd_exec = [self.wheels_cmd_executed.vel_left, self.wheels_cmd_executed.vel_right]

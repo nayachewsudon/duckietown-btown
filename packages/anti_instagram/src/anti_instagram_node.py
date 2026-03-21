@@ -2,8 +2,7 @@
 
 import rospy
 from multiprocessing import Lock
-from dt_computer_vision.anti_instagram import AntiInstagram
-from dt_computer_vision.camera import BGRImage
+from image_processing.anti_instagram import AntiInstagram
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage
 from duckietown_msgs.msg import AntiInstagramThresholds
@@ -26,17 +25,13 @@ class AntiInstagramNode(DTROS):
 
     def __init__(self, node_name):
 
-        super(AntiInstagramNode, self).__init__(
-            node_name=node_name,
-            node_type=NodeType.PERCEPTION,
-            fsm_controlled=True
-        )
+        super(AntiInstagramNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
         # Read parameters
 
         self._interval = rospy.get_param("~interval")
-        _color_balance_scale = rospy.get_param("~color_balance_scale")
-        _output_scale = rospy.get_param("~output_scale")
+        self._color_balance_percentage = rospy.get_param("~color_balance_scale")
+        self._output_scale = rospy.get_param("~output_scale")
 
         # Construct publisher
         self.pub = rospy.Publisher(
@@ -56,10 +51,9 @@ class AntiInstagramNode(DTROS):
         rospy.Timer(rospy.Duration(self._interval), self.calculate_new_parameters)
 
         # Initialize objects and data
-        self.ai = AntiInstagram(image_scale=_output_scale, color_balance_scale=_color_balance_scale)
+        self.ai = AntiInstagram()
         self.bridge = CvBridge()
         self.image_msg = None
-        #LP I don't see that we should need this mutex anymore
         self.mutex = Lock()
 
         # ---
@@ -69,7 +63,7 @@ class AntiInstagramNode(DTROS):
         with self.mutex:
             self.image_msg = image_msg
 
-    def decode_image_msg(self) -> BGRImage:
+    def decode_image_msg(self):
         with self.mutex:
             try:
                 image = self.bridge.compressed_imgmsg_to_cv2(self.image_msg, "bgr8")
@@ -82,12 +76,14 @@ class AntiInstagramNode(DTROS):
             self.log("Waiting for first image!")
             return
         image = self.decode_image_msg()
-        self.ai.update(image)
+        (lower_thresholds, higher_thresholds) = self.ai.calculate_color_balance_thresholds(
+            image, self._output_scale, self._color_balance_percentage
+        )
 
         # Publish parameters
         msg = AntiInstagramThresholds()
-        msg.low = self.ai.lower_threshold
-        msg.high = self.ai.higher_threshold
+        msg.low = lower_thresholds
+        msg.high = higher_thresholds
         self.pub.publish(msg)
 
 
