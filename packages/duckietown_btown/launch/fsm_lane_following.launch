@@ -6,7 +6,7 @@
     <param name="/$(arg veh)/robot_type" value="$(arg robot_type)"/>
     <param name="/$(arg veh)/robot_configuration" value="$(arg robot_configuration)"/>
 
-    <include file="$(find duckietown_btown)/launch/master.launch">
+    <include file="$(find our_duckietown_btown)/launch/master.launch">
         <arg name="veh" value="$(arg veh)"/>
         <arg name="demo_name" value="lane_following"/>
         <arg name="fsm" value="true"/>
@@ -21,20 +21,20 @@
         <arg name="/lane_following/lane_controller" value="true"/>
     </include>
 
-    <node name="anti_instagram_node" pkg="anti_instagram" type="anti_instagram_node.py" ns="$(arg veh)" output="screen">
+    <node name="anti_instagram_node" pkg="our_anti_instagram" type="anti_instagram_node.py" ns="$(arg veh)" output="screen">
         <remap from="~uncorrected_image/compressed" to="camera_node/image/compressed"/>
         <param name="interval" value="5.0" />
         <param name="output_scale" value="0.5" />
     </node>
 
-    <node name="line_detector_node" pkg="line_detector" type="line_detector_node.py" ns="$(arg veh)" output="screen">
+    <node name="line_detector_node" pkg="our_line_detector" type="line_detector_node.py" ns="$(arg veh)" output="screen">
         <remap from="~image/compressed" to="camera_node/image/compressed"/>
         <remap from="~thresholds" to="anti_instagram_node/thresholds"/>
         <param name="img_size" value="[120, 160]" />
         <param name="top_cutoff" value="40" />
-        <rosparam command="load" file="$(find line_detector)/config/line_detector_node/default.yaml" />
+        <rosparam command="load" file="$(find our_line_detector)/config/line_detector_node/default.yaml" />
     </node>
 
-    <node name="safe_rl_node" pkg="safe_rl" type="safe_rl_node.py" ns="$(arg veh)" output="screen">
-        </node>
+    <node name="safe_rl_node" pkg="our_safe_rl" type="safe_rl_node.py" ns="$(arg veh)" output="screen">
+    </node>
 </launch>
