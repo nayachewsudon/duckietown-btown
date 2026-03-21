@@ -4,8 +4,8 @@ from duckietown.dtros import DTROS, NodeType
 import numpy as np
 import random
 from sensor_msgs.msg import Range
-from duckietown_msgs.msg import Twist2DStamped, LanePose, BoolStamped
-from geometry_msgs.msg import Polygon
+from duckietown_msgs.msg import Twist2DStamped, LanePose, BoolStamped, FSMState
+from geometry_msgs.msg import Polygon, Point32
 from twin_delayed import TD3
 import threading
 import torch
@@ -18,7 +18,7 @@ class SafeRLNode(DTROS):
         super(SafeRLNode, self).__init__(
             node_name=node_name,
             node_type = NodeType.CONTROL,
-            fsm_controlled = True
+            #fsm_controlled = True
         )
 
         #Topics from tof_obstacle_detection_node
@@ -36,6 +36,9 @@ class SafeRLNode(DTROS):
         #Publisher topic: 
         self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
         self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
+
+        self.state = None
+        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_state_change)
         
         #Variables
         self.tof_distance = float('inf')
@@ -55,6 +58,10 @@ class SafeRLNode(DTROS):
 
         weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights")
         self.load_weights(weights_path)
+
+        #state tracking
+        self.state = None
+        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_state_change)
 
     def load_weights(self, path):
         try:
@@ -133,11 +140,29 @@ class SafeRLNode(DTROS):
 
         return done
     
+    def execute_action(self, action):
+        v, omega = action[0], action[1]
+        msg = Polygon()
+        p1 = Point32(); p1.x = 0.2; p1.y = float(omega) * 0.1; p1.z = 0.0
+        p2 = Point32(); p2.x = 0.4; p2.y = float(omega) * 0.2; p2.z = 0.0
+        p3 = Point32(); p3.x = 0.6; p3.y = float(omega) * 0.3; p3.z = 0.0
+        msg.points = [p1, p2, p3]
+        self.pub_avoidance_path.publish(msg)
+
+    def check_obstacle_cleared(self):
+        CRITICAL_DISTANCE = 0.2
+        if self.object_avoided and self.tof_distance > CRITICAL_DISTANCE:
+            return True
+        return False
+    
     def on_switch_on(self):
         rospy.loginfo("[safe_rl] switched on, starting RL loop")
         t = threading.Thread(target=self._rl_loop)
         t.daemon = True
         t.start()
+
+    def cb_state_change(self, msg):
+        self.state = msg.state
 
     def _rl_loop(self):
         rospy.loginfo("[safe_rl] RL loop started")

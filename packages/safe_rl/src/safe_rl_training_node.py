@@ -4,7 +4,7 @@ from duckietown.dtros import DTROS, NodeType
 import numpy as np
 import random
 from sensor_msgs.msg import Range
-from duckietown_msgs.msg import Twist2DStamped, LanePose, BoolStamped
+from duckietown_msgs.msg import Twist2DStamped, LanePose, BoolStamped, FSMState
 from geometry_msgs.msg import Polygon, Point32
 from twin_delayed import TD3, ReplayBuffer
 import threading
@@ -18,7 +18,7 @@ class SafeRLTrainingNode(DTROS):
         super(SafeRLTrainingNode, self).__init__(
             node_name=node_name,
             node_type = NodeType.CONTROL,
-            fsm_controlled = True
+            #fsm_controlled = True
         )
 
         #Subscribers from tof_obstacle_detection_node
@@ -33,6 +33,8 @@ class SafeRLTrainingNode(DTROS):
         #Subscribers from car_cmd
         self.sub_car_cmd = rospy.Subscriber("lane_controller_node/car_cmd", Twist2DStamped, self.cb_car_cmd)
 
+        self.state = None
+        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_state_change)
         #Publishers: 
         self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
         self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
@@ -101,6 +103,9 @@ class SafeRLTrainingNode(DTROS):
             return
         if msg.data:
             self.obstacle_detected = False
+
+    def cb_state_change(self, msg):
+        self.state = msg.state
     
     def compute_reward(self):
 
