@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>safe_rl</name>
+  <version>1.0.0</version>
+  <description>Safe RL supervisor for Duckietown</description>
+  <maintainer email="duckie@todo.todo">duckie</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>duckietown_msgs</depend>
+  <depend>duckietown</depend>
+  <depend>line_detector</depend>
+  <depend>anti_instagram</depend>
+  <depend>lane_filter</depend>
+  <depend>lane_control</depend>
+  <depend>our_fsm</depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+
+  <export>
+  </export>
+</package>

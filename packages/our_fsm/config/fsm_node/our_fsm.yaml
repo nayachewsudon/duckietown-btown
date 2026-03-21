@@ -1,6 +1,4 @@
-# FSM used during deployment
-#Uses events collision_detected to state EMERGENCY_STOP
-#and after_emergency_stop to state LANE_FOLLOWING
+# Initial state of the FSM
 
 initial_state: "LANE_FOLLOWING"
 
@@ -15,10 +13,9 @@ events: # Maps from subscribing topic to signal ids
     msg_type: "BoolStamped"
     trigger: True
 
-#Basically after collision, we wait until obstacle is gone from path, we can go back to lane following
   after_emergency_stop:
-    topic: "safe_rl_node/obstacle_cleared"
-    msg_type: BoolStamped
+    topic: 
+    msg_type: 
     trigger: True
 
   object_detected:
@@ -33,9 +30,25 @@ events: # Maps from subscribing topic to signal ids
 
   #Topic published by the RL
   collision_detected:
-    topic: "safe_rl__training_node/collision_detected"
-    msg_type: BoolStamped
-    trigger: True
+    topic:
+    msg_type:
+    trigger:
+  
+  tasks_accomplished:
+    topic:
+    msg_type:
+    trigger:
+
+  timeout:
+    topic:
+    msg_type:
+    trigger:
+
+  # this is for training the rl agent
+  ep_reset:
+    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+    msg_type:
+    trigger:
 
 # Define nodes
 nodes:
@@ -61,7 +74,7 @@ global_transitions:
 states:
   LANE_FOLLOWING:
     transitions:
-      #at_stop_line: "ARRIVE_AT_STOP_LINE"
+      at_stop_line: "ARRIVE_AT_STOP_LINE"
       object_detected: "OBJECT_AVOIDANCE"
     active_nodes:
       - anti_instagram
@@ -110,3 +123,5 @@ states:
       - safe_rl_node
       - avoiders_controller_node
     lights: "BLUE"
+
+

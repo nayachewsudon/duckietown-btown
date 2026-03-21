@@ -7,11 +7,23 @@
     <include file="$(find duckietown_btown)/launch/master.launch">
         <arg name="veh" value="$(arg veh)"/>
         <arg name="camera_topic" value="$(arg camera_topic)"/>
-        <arg name="demo_name" value="lane_following"/>
+        <arg name="demo_name" value="$(arg demo_name)"/>
+		<arg name="param_file_name" value="default" />
+		<arg name="visualization" value="true" />
         
         <arg name="fsm" value="true"/>
-        <arg name="fsm_file_name" value="our_fsm"/> 
-	<arg name="anti_instagram" value="true"/>
+        <arg name="fsm_file_name" value="our_fsm_training"/> 
+        <!-- Basic functionalities -->
+		<arg name="line_detector_param_file_name" default="default" />
+		<arg name="anti_instagram" default="true" />
+		<arg name="/camera/raw" value="true"/>
+		<arg name="/camera/rect" value="true"/>
+		<arg name="LED" value="true"/>
+        <arg name="/LED/emitter" value="true"/>
+		<arg name="/LED/detector" value="true"/>
+		<arg name="/LED/pattern_switch" value="true"/>
+
+        <!-- lane following stack-->
         <arg name="lane_following" value="true"/>
         <arg name="/lane_following/line_detection" value="true"/>
         <arg name="/lane_following/ground_projection" value="true"/>

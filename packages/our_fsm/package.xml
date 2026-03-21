@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>our_fsm</name>
+  <name>fsm</name>
   <version>1.0.0</version>
   <description>The finite state machine coordinates the modes of the car. The fsm package consists of two nodes, namely `fsm_node` and `logic_gate_node`.
   </description>
