@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(stop_line_filter)
+project(our_stop_line_filter)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

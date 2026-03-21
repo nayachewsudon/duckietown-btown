@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>line_detector</name>
+  <name>our_line_detector</name>
   <version>1.0.0</version>
   <description>line_detector node</description>
   <maintainer email="alpetrov@ethz.ch">Aleksandar Petrov</maintainer>

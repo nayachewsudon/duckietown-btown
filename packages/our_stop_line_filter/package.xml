@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>stop_line_filter</name>
+  <name>our_stop_line_filter</name>
   <version>1.0.0</version>
   <description>TODO: Add a description of package `stop_line_filter` in `package.xml`.</description>
 

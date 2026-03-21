@@ -90,7 +90,7 @@
     <group if="$(arg /camera/raw)">
         <remap from="decoder_node/image_in" to="camera_node/image/compressed"/>
         <remap from="decoder_node/image_out" to="camera_node/image/raw"/>
-        <include file="$(find image_processing)/launch/image_decoding.launch">
+        <include file="$(find our_image_processing)/launch/image_decoding.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
@@ -101,7 +101,7 @@
     <group if="$(arg /camera/rect)">
         <remap from="rectifier_node/image_in" to="camera_node/image/compressed"/>
         <remap from="rectifier_node/camera_info_in" to="camera_node/camera_info"/>
-        <include file="$(find image_processing)/launch/image_rectification.launch">
+        <include file="$(find our_image_processing)/launch/image_rectification.launch">
             <arg name="veh" value="$(arg veh)"/>
         </include>
     </group>
@@ -113,7 +113,7 @@
         <!-- FSM -->
         <!-- no remapping for FSM - full topic names specified in params yaml -->
         <remap from="fsm_node/set_pattern" to="led_emitter_node/set_pattern"/>
-        <include file="$(find our_fsm)/launch/fsm_node.launch">
+        <include file="$(find our_our_fsm)/launch/fsm_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
         </include>
@@ -127,7 +127,7 @@
 
         <group if="$(arg /fsm/logic_gate)">
           <!-- <remap from="coordinator_node/intersection_go" to="logic_gate_node/explicit_intersection_go" /> -->
-          <include file="$(find our_fsm)/launch/logic_gate_node.launch">
+          <include file="$(find our_our_fsm)/launch/logic_gate_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
           </include>
@@ -142,7 +142,7 @@
         <group if="$(arg /lane_following/line_detection)">
             <remap from="line_detector_node/thresholds" to="anti_instagram_node/thresholds"/>
             <remap from="line_detector_node/image/compressed" to="camera_node/image/compressed"/>
-            <include file="$(find line_detector)/launch/line_detector_node.launch">
+            <include file="$(find our_line_detector)/launch/line_detector_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg line_detector_param_file_name)"/>
             </include>
@@ -154,14 +154,14 @@
             <remap from="~lineseglist_in" to="line_detector_node/segment_list"/>
             <remap from="~cali_image" to="$(arg camera_topic)/image/raw"/>
             <remap from="~camera_info" to="$(arg camera_topic)/camera_info"/>
-            <include file="$(find ground_projection)/launch/ground_projection_node.launch">
+            <include file="$(find our_ground_projection)/launch/ground_projection_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
             </include>
             <group if="$(arg visualization)">
                 <remap from="line_segment_visualizer_node/segment_list" to="ground_projection_node/lineseglist_out"/>
                 <remap from="line_segment_visualizer_node/segment_list_filtered" to="lane_filter_node/seglist_filtered"/>
-                <include file="$(find visualization_tools)/launch/line_segment_visualizer_node.launch">
+                <include file="$(find our_visualization_tools)/launch/line_segment_visualizer_node.launch">
                     <arg name="veh" value="$(arg veh)" />
                 </include>
             </group>
@@ -175,7 +175,7 @@
             <remap from="lane_filter_node/left_wheel_encoder_node/tick" to="left_wheel_encoder_node/tick"/>
             <remap from="lane_filter_node/right_wheel_encoder_node/tick" to="right_wheel_encoder_node/tick"/>
 	        <!--<remap from="lane_filter_node/seglist_filtered" to="lane_controller_node/seglist_filtered" />-->
-            <include file="$(find lane_filter)/launch/lane_filter_node.launch">
+            <include file="$(find our_lane_filter)/launch/lane_filter_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
             </include>
@@ -187,7 +187,7 @@
             <remap from="stop_line_filter_node/lanewidth" to="lane_filter_node/lanewidth"/>
             <remap from="stop_line_filter_node/lane_pose" to="lane_filter_node/lane_pose"/>
             <remap from="stop_line_filter_node/segment_list" to="ground_projection_node/lineseglist_out"/>
-            <include file="$(find stop_line_filter)/launch/stop_line_filter_node.launch">
+            <include file="$(find our_stop_line_filter)/launch/stop_line_filter_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
             </include>
@@ -204,13 +204,13 @@
             <remap from="wheels_driver_node/radius_limit" to="lane_controller_node/radius_limit" />
 			<remap from="lane_controller_node/car_cmd" to="joy_mapper_node/car_cmd" />
             <!-- <remap from="lane_controller_node/set_pattern" to="led_emitter_node/set_pattern"/> -->
-            <include file="$(find lane_control)/launch/lane_controller_node.launch">
+            <include file="$(find our_lane_control)/launch/lane_controller_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
             </include>
 
 		<!--     <remap from="intersection_controller_node/turn_id" to="lane_controller_node/turn_id" /> -->
-		<!--     <include file="$(find intersection_control)/launch/intersection_controller_node.launch"> -->
+		<!--     <include file="$(find our_intersection_control)/launch/intersection_controller_node.launch"> -->
 		<!--         <arg name="veh" value="$(arg veh)"/> -->
 		<!--         <arg name="param_file_name" value="$(arg param_file_name)"/> -->
 		<!--     </include> -->
@@ -218,7 +218,7 @@
 
         <!-- Visualization -->
         <group if="$(arg visualization)">
-            <include file="$(find visualization_tools)/launch/lane_pose_visualizer_node.launch">
+            <include file="$(find our_visualization_tools)/launch/lane_pose_visualizer_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>
@@ -230,7 +230,7 @@
 	<remap from="vehicle_detection_node/image" to="camera_node/image/compressed" />
 	<!-- <remap from="vehicle_detection_node/detection" to="road_anomaly_watcher/obstacle_exists" /> -->
 	<group if="$(arg /vehicle_avoidance/detection)">
-		<include file="$(find vehicle_detection)/launch/vehicle_detection_node.launch">
+		<include file="$(find our_vehicle_detection)/launch/vehicle_detection_node.launch">
 			<arg name="veh" value="$(arg veh)"/>
 		</include>
 	</group>
@@ -245,7 +245,7 @@
 	<!-- <remap from="vehicle_filter_node/virtual_stop_line" to="road_anomaly_watcher/obstacle_distance"/> -->
 	<!-- <remap from="vehicle_filter_node/stopped" to="road_anomaly_watcher/obstacle_halted_vehicle"/> -->
 	<group if="$(arg /vehicle_avoidance/filter)">
-		<include file="$(find vehicle_detection)/launch/vehicle_filter_node.launch">
+		<include file="$(find our_vehicle_detection)/launch/vehicle_filter_node.launch">
 			<arg name="veh" value="$(arg veh)"/>
 		</include>
 	</group>
@@ -255,7 +255,7 @@
             <remap from="vehicle_avoidance_control_node/detection" to="vehicle_detection_node/detection"/>
             <remap from="vehicle_avoidance_control_node/vehicle_pose" to="vehicle_filter_node/pose"/>
             <remap from="vehicle_avoidance_control_node/car_cmd_in" to="lane_controller_node/car_cmd"/>
-            <include file="$(find vehicle_detection)/launch/vehicle_avoidance_control_node.launch">
+            <include file="$(find our_vehicle_detection)/launch/vehicle_avoidance_control_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>-->
@@ -277,14 +277,14 @@
             <remap from="obstacle_detection_node/vehicle_detection/detection" to="road_anomaly_watcher/obstacle_exists"/>
 <!--            tof range -->
             <remap from="obstacle_detection_node/front_center_tof/range" to="front_center_tof_driver_node/range"/>
-            <include file="$(find obstacle_detection)/launch/obstacle_detection_node.launch">
+            <include file="$(find our_obstacle_detection)/launch/obstacle_detection_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>
 
         <group if="$(arg /obstacle_detection/tof)">
             <remap from="tof_obstacle_detection_node/front_center_tof/range" to="front_center_tof_driver_node/range"/>
-            <include file="$(find obstacle_detection)/launch/tof_obstacle_detection_node.launch">
+            <include file="$(find our_obstacle_detection)/launch/tof_obstacle_detection_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>
@@ -296,13 +296,13 @@
 		<!-- Detection -->
 		<remap from="apriltag_detector_node/image" to="camera_node/image/compressed" />
 		<remap from="apriltag_detector_node/camera_info" to="camera_node/camera_info" />
-		<include file="$(find apriltag)/launch/apriltag_detector_node.launch">
+		<include file="$(find our_apriltag)/launch/apriltag_detector_node.launch">
 			<arg name="veh" value="$(arg veh)"/>
 		</include>
 
 		<!-- Postprocessing -->
 		<remap from="apriltag_postprocessing_node/detections" to="apriltag_detector_node/detections" />
-		<include file="$(find apriltag)/launch/apriltag_postprocessing_node.launch">
+		<include file="$(find our_apriltag)/launch/apriltag_postprocessing_node.launch">
 			<arg name="veh" value="$(arg veh)"/>
 			<arg name="config" value="$(arg config)"/>
 			<arg name="param_file_name" value="$(arg param_file_name)"/>
@@ -315,7 +315,7 @@
     <group if="$(arg /localization)">
         <group if="$(arg /localization/deadreckoning)">
             <!-- Deadreckoning node -->
-            <include file="$(find deadreckoning)/launch/deadreckoning_node.launch">
+            <include file="$(find our_deadreckoning)/launch/deadreckoning_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>
@@ -323,7 +323,7 @@
         <!-- Localization node -->
         <group if="$(arg /localization/apriltag_localization)">
             <remap from="localization_node/detections" to="apriltag_detector_node/detections" />
-            <include file="$(find autolab)/launch/localization.launch">
+            <include file="$(find our_autolab)/launch/localization.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="robot_type" value="$(arg robot_type)"/>
                 <arg name="robot_configuration" value="$(arg robot_configuration)"/>
@@ -339,7 +339,7 @@
         <!-- Detection -->
         <group if="$(arg /LED/detector)">
             <remap from="led_detector_node/image/compressed" to="camera_node/image/compressed"/>
-            <include file="$(find led_detection)/launch/led_detection.launch">
+            <include file="$(find our_led_detection)/launch/led_detection.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
                 <arg name="verbose" value = "1"/>
@@ -348,7 +348,7 @@
 
         <!--remap from="led_joy_mapper_node/change_color_pattern" to="led_emitter_node/change_color_pattern" /-->
         <group if="$(arg /LED/joystick)">
-            <include file="$(find led_joy_mapper)/launch/led_joy_mapper_node.launch">
+            <include file="$(find our_led_joy_mapper)/launch/led_joy_mapper_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="config" value="$(arg config)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
@@ -357,7 +357,7 @@
 
         <!--<remap from="led_pattern_switch_node/change_color_pattern" to="led_emitter_node/set_pattern" />-->
         <group if="$(arg /LED/emitter)">
-            <include file="$(find led_emitter)/launch/led_emitter_node.launch">
+            <include file="$(find our_led_emitter)/launch/led_emitter_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
             </include>
         </group>
@@ -365,7 +365,7 @@
                 <!--<remap from="led_pattern_switch_node/change_color_pattern" to="led_emitter_node/set_pattern" />-->
         <group if="$(arg /LED/pattern_switch)">
             <remap from="led_pattern_switch_node/set_pattern" to="led_emitter_node/set_pattern"/>
-            <include file="$(find led_pattern_switch)/launch/led_pattern_switch_node.launch">
+            <include file="$(find our_led_pattern_switch)/launch/led_pattern_switch_node.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
             </include>
@@ -379,7 +379,7 @@
         <remap from="communication_node/image_in" to="$(arg camera_topic)/image/compressed"/>
         <remap from="communication_node/intersection_type_in" to="apriltag_postprocessing_node/apriltags_out"/>
         <remap from="communication_node/set_custom_pattern" to="led_emitter_node/set_custom_pattern"/>
-        <include file="$(find communication)/launch/communication_node.launch">
+        <include file="$(find our_communication)/launch/communication_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
@@ -397,7 +397,7 @@
             <!--remap from="simple_coordinator_node/change_color_pattern" to="led_emitter_node/change_color_pattern" /-->
             <remap from="coordinator_node/path_computed" to="intersection_navigation_node/path_computed" />
             <remap from="coordinator_node/maintenance_state" to="maintenance_control_node/maintenance_state"/>
-            <include file="$(find explicit_coordinator)/launch/coordination_ETHZ17.launch">
+            <include file="$(find our_explicit_coordinator)/launch/coordination_ETHZ17.launch">
                 <arg name="veh" value="$(arg veh)"/>
                 <arg name="config" value="$(arg config)"/>
                 <arg name="param_file_name" value="$(arg param_file_name)"/>
@@ -417,11 +417,11 @@
         <remap from="unicorn_intersection_node/left_wheel_encoder_driver_node/tick" to="left_wheel_encoder_driver_node/tick"/>
         <remap from="unicorn_intersection_node/right_wheel_encoder_driver_node/tick" to="right_wheel_encoder_driver_node/tick"/>
 
-        <include file="$(find intersection_planner)/launch/intersection_planner_node.launch">
+        <include file="$(find our_intersection_planner)/launch/intersection_planner_node.launch">
             <arg name="veh" value="$(arg veh)"/>
         </include>
 
-        <include file="$(find unicorn_intersection)/launch/unicorn_intersection_node.launch">
+        <include file="$(find our_unicorn_intersection)/launch/unicorn_intersection_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
@@ -431,7 +431,7 @@
     <!-- Start intersection type detection -->
     <group if="$(arg intersection_type_detector)">
         <remap from="intersection_type_detector_node/tag" to="apriltag_postprocessing_node/apriltags_out"/>
-        <include file="$(find navigation)/launch/intersection_type_detector_node.launch">
+        <include file="$(find our_navigation)/launch/intersection_type_detector_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
@@ -447,7 +447,7 @@
 
         <remap from="random_april_tag_turns_node/turn_type" to="intersection_navigation_node/turn_type"/>
 
-        <include file="$(find navigation)/launch/random_april_tag_turns_node.launch">
+        <include file="$(find our_navigation)/launch/random_april_tag_turns_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
@@ -458,7 +458,7 @@
     <group if="$(arg anti_instagram)">
         <remap from="anti_instagram_node/uncorrected_image/compressed" to="camera_node/image/compressed"/>
         <!-- NOT LOADING PARAMS FROM A YAML FILE -->
-        <include file="$(find anti_instagram)/launch/anti_instagram_node.launch">
+        <include file="$(find our_anti_instagram)/launch/anti_instagram_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <!-- <arg name="ai_interval" value="$(arg ai_interval)"/>-->
         </include>
@@ -478,12 +478,12 @@
         <remap from="intersection_supervisor_node/turn_type" to="intersection_navigation_node/turn_type" />
         <remap from="intersection_supervisor_node/tag" to="apriltag_postprocessing_node/apriltags_out"/>
         <remap from="intersection_supervisor_node/intersection_done" to="intersection_navigation/intersection_done"/>
-        <include file="$(find parallel_autonomy)/launch/lane_supervisor_node.launch">
+        <include file="$(find our_parallel_autonomy)/launch/lane_supervisor_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="config" value="$(arg config)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>
         </include>
-        <include file="$(find parallel_autonomy)/launch/intersection_supervisor_node.launch">
+        <include file="$(find our_parallel_autonomy)/launch/intersection_supervisor_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="config" value="$(arg config)"/>
             <arg name="param_file_name" value="$(arg param_file_name)"/>

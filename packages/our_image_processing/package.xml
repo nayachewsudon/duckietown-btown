@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>image_processing</name>
+  <name>our_image_processing</name>
   <version>1.0.0</version>
   <description>TODO: Add a description of package `image_processing` in `package.xml`.</description>
 

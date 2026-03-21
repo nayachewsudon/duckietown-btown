@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>obstacle_detection</name>
+  <name>our_obstacle_detection</name>
   <version>1.0.0</version>
   <description>TODO: Add a description of package `obstacle_detection` in `package.xml`.</description>
 

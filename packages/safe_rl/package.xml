@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>safe_rl</name>
+  <name>our_safe_rl</name>
   <version>1.0.0</version>
   <description>Safe RL supervisor for Duckietown</description>
   <maintainer email="duckie@todo.todo">duckie</maintainer>

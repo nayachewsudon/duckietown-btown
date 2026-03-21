@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>ground_projection</name>
+  <name>our_ground_projection</name>
   <version>1.0.0</version>
   <description>TODO: Add a description of package `ground_projection` in `package.xml`.</description>
 

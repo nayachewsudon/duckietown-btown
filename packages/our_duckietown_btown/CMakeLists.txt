@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(duckietown_btown)
+project(our_duckietown_btown)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)

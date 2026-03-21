@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>vehicle_detection</name>
+  <name>our_vehicle_detection</name>
   <version>1.0.0</version>
   <description>TODO: Add a description of package `vehicle_detection` in `package.xml`.</description>
 

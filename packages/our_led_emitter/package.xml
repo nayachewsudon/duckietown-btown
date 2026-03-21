@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>led_emitter</name>
+  <name>our_led_emitter</name>
   <version>1.0.0</version>
   <description>TODO: description for `led_emitter` package.</description>
 

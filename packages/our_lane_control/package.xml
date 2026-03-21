@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>lane_control</name>
+  <name>our_lane_control</name>
   <version>1.0.0</version>
   <description>The package containing the lane controller.</description>
 
