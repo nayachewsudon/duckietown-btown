@@ -110,24 +110,14 @@
 
     <!-- Start FSM -->
     <group if="$(arg fsm)">
-        <!-- FSM -->
-        <!-- no remapping for FSM - full topic names specified in params yaml -->
         <remap from="fsm_node/set_pattern" to="led_emitter_node/set_pattern"/>
-        <include file="$(find our_our_fsm)/launch/fsm_node.launch">
+        <include file="$(find our_fsm)/launch/fsm_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
         </include>
 
-        <!-- car_cmd_switch_node -->
-        <!-- no remappings for car_cmd_switch - full topic names specified in params yaml -->
-        <!-- <remap from="car_cmd_switch_node/cmd_lane_following" to="lane_controller_node/lane_control"/>
-        <group unless="$(arg vehicle_avoidance)">
-                <remap from="vehicle_avoidance_control_node/car_cmd" to="lane_controller_node/car_cmd" />
-        </group> -->
-
         <group if="$(arg /fsm/logic_gate)">
-          <!-- <remap from="coordinator_node/intersection_go" to="logic_gate_node/explicit_intersection_go" /> -->
-          <include file="$(find our_our_fsm)/launch/logic_gate_node.launch">
+          <include file="$(find our_fsm)/launch/logic_gate_node.launch">
             <arg name="veh" value="$(arg veh)"/>
             <arg name="param_file_name" value="$(arg fsm_file_name)"/>
           </include>
