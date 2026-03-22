@@ -21,6 +21,7 @@ class SafeRLNode(DTROS):
             node_name=node_name,
             node_type=NodeType.CONTROL,
         )
+        self._initialized = False
 
         self.tof_distance = float("inf")
         self.tof_min_range = 0.0
@@ -71,6 +72,7 @@ class SafeRLNode(DTROS):
         self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
         self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
         self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)
+        self._initialized = True
 
     def load_weights(self, path):
         try:
@@ -199,6 +201,9 @@ class SafeRLNode(DTROS):
         return "running"
 
     def on_switch_on(self):
+        if not self._initialized:
+            rospy.logwarn("[safe_rl] switch-on received before initialization finished")
+            return
         rospy.loginfo("[safe_rl] switched on, starting RL loop")
         t = threading.Thread(target=self._rl_loop)
         t.daemon = True
