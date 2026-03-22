@@ -120,16 +120,41 @@ class Avoider(DTROS): #comment here
         self.planning = False
 
     def execute(self,poly):
-        
+        if not self.switch: 
+            return
+
         if  self.planning == False:
             self.target_states = np.array([[poly.points[i].x,poly.points[i].y] for i in range(3)])
             print(" in execute ")
             print(self.target_states)
-
-
+        
         self.path_valid = True
 
+    #Publish stop for training
+    def publish_stop(self):
+        stop_msg = Twist2DStamped()
+        stop_msg.header.stamp = rospy.Time.now()
+        stop_msg.v = 0.0
+        stop_msg.omega = 0.0
+        self.pub_motor.publish(stop_msg)
+
+    def on_switch_off(self):
+        self.loginfo("Avoider switched off: stopping robot and clearing path.")
+        self.publish_stop()
+        self.reset()
+        self.path_valid = False
+        self.planning = False
+    
+    def on_switch_on(self):
+        self.loginfo("Avoider switched on: resetting planner state.")
+        self.reset()
+        self.path_valid = False
+        self.planning = False
+    
     def cb_ts_encoders(self, left_encoder, right_encoder):
+
+        if not self.switch:
+            return
 
         if self.path_valid == False or self.final_state == 1:
             return
