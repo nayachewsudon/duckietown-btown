@@ -44,6 +44,8 @@ class TOFObstacleDetectionNode(DTROS):
 
 
     def cb_tof_range(self, msg: Range):
+        if msg.range >= msg.max_range or msg.range < msg.min_range: 
+            return
         obstacle_detected = False
         if msg.range < self._tof_threshold:
             obstacle_detected = True
