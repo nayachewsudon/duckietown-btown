@@ -46,7 +46,7 @@ class SafeRLTrainingNode(DTROS):
 
         self.episode_start_time = 0.0
         self.episode_timeout = rospy.get_param("~episode_timeout", 10.0)
-        self.collision_distance = rospy.get_param("~collision_distance", 0.10)
+        self.collision_distance = rospy.get_param("~collision_distance", 0.05)
 
         self.state_dim = 3
         self.action_dim = 2
@@ -98,6 +98,7 @@ class SafeRLTrainingNode(DTROS):
             return
         self.tof_distance = tof_msg.range
         self.tof_min_range = tof_msg.min_range
+        rospy.loginfo_throttle(1.0, "[safe_rl_training] front_center_tof=%.3fm", self.tof_distance)
 
     def cb_avoidance_done(self, avoidance_msg):
         if not self.switch:
@@ -126,7 +127,7 @@ class SafeRLTrainingNode(DTROS):
         self.state = msg.state
 
     def collision_threshold(self):
-        return max(self.collision_distance, self.tof_min_range)
+        return self.collision_distance
 
     def publish_collision(self):
         if self.collision_detected:
@@ -143,7 +144,7 @@ class SafeRLTrainingNode(DTROS):
         self.pub_collision.publish(msg)
 
     def check_collision(self):
-        if self.obstacle_detected and self.tof_distance <= self.collision_threshold():
+        if 0.0 < self.tof_distance <= self.collision_threshold():
             self.publish_collision()
             return True
         return False
