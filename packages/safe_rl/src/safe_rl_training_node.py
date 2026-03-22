@@ -166,7 +166,7 @@ class SafeRLTrainingNode(DTROS):
             if rospy.get_time() - self.episode_start_time > self.episode_timeout: 
                 rospy.loginfo("[safe_rl_training] Episode timed out while waiting for avoidance_done")
                 msg = BoolStamped()
-                msg.header.stamp() = rospy.Time.now()
+                msg.header.stamp = rospy.Time.now()
                 msg.data = True
                 self.pub_timeout.publish(msg)
                 return True
