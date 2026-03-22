@@ -67,7 +67,7 @@ class SafeRLTrainingNode(DTROS):
             queue_size=2,
         )
         self.sub_tof = rospy.Subscriber(
-            "tof_obstacle_detection_node/front_center_tof/range",
+            "front_center_tof_driver_node/range",
             Range,
             self.cb_tof_range,
         )
