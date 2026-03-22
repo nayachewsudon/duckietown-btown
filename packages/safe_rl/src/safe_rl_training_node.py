@@ -47,7 +47,7 @@ class SafeRLTrainingNode(DTROS):
 
         self.episode_start_time = 0.0
         self.episode_timeout = rospy.get_param("~episode_timeout", 10.0)
-        self.collision_distance = rospy.get_param("~collision_distance", 0.05)
+        self.collision_distance = rospy.get_param("~collision_distance", 0.033)
 
         self.state_dim = 3
         self.action_dim = 2

@@ -34,7 +34,7 @@ class SafeRLNode(DTROS):
         self.lane_offset = 0.0
         self.lane_heading = 0.0
         self.state = None
-        self.collision_distance = rospy.get_param("~collision_distance", 0.05)
+        self.collision_distance = rospy.get_param("~collision_distance", 0.033)
 
         self.state_dim = 3
         self.action_dim = 2
