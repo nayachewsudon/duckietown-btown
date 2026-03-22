@@ -13,3 +13,6 @@ git+https://github.com/duckietown/lib-dt-computer-vision.git@ente
 git+https://github.com/duckietown/lib-dt-state-estimation.git@ente
 lib-dt-modeling==0.0.5
 lib-dt-motion-planning==0.0.1
+torch
+torchvision
+numpy
