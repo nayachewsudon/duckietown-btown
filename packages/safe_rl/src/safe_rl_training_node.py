@@ -23,6 +23,7 @@ class SafeRLTrainingNode(DTROS):
             node_type=NodeType.CONTROL,
         )
         self._initialized = False
+        self._loop_started = False
 
         self.tof_distance = float("inf")
         self.tof_min_range = 0.0
@@ -86,6 +87,8 @@ class SafeRLTrainingNode(DTROS):
         self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)
         self.pub_timeout = rospy.Publisher("~timeout", BoolStamped, queue_size=1)
         self._initialized = True
+        if self.switch:
+            self.on_switch_on()
 
     def cb_lane(self, lane_msg):
         if not self.switch:
@@ -289,6 +292,9 @@ class SafeRLTrainingNode(DTROS):
         if not self._initialized:
             rospy.logwarn("[safe_rl_training] switch-on received before initialization finished")
             return
+        if self._loop_started:
+            return
+        self._loop_started = True
         """
         Called automatically by DTROS when the FSM activates this node
         (i.e., when FSM enters OBJECT_AVOIDANCE state).
@@ -325,6 +331,7 @@ class SafeRLTrainingNode(DTROS):
                     self.episode_end_reason or "unknown",
                 )
                 break
+        self._loop_started = False
 
         if len(self.replay_buffer.storage) > 0:
             self.save_weights()
