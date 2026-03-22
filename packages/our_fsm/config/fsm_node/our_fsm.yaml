@@ -54,7 +54,7 @@ nodes:
 
 
 # Define global state transitiobs
-global_transitions:
+global_transitions: ()
 
 # Define states
 
@@ -95,7 +95,7 @@ states:
     lights: "YELLOW"
 
   EPISODE_RESET:
-    transitions:
+    transitions:()
     active_nodes:
       - safe_rl_node  
     lights: "RED"
