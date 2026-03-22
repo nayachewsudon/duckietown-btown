@@ -21,32 +21,32 @@ events: # Maps from subscribing topic to signal ids
     trigger: True
 
   #Should be present in the deployed FSM yaml
-  #object_avoided:
-  #  topic: "safe_rl_training_node/object_avoided"
-  #  msg_type: "BoolStamped"
-  #  trigger: True
+  object_avoided:
+    topic: "safe_rl_training_node/object_avoided"
+    msg_type: "BoolStamped"
+    trigger: True
 
   #Topic published by the RL
-  #collision_detected:
-  #  topic: "safe_rl_training_node/collision_detected"
-  #  msg_type: BoolStamped
-  #  trigger: True
+  collision_detected:
+    topic: "safe_rl_training_node/collision_detected"
+    msg_type: BoolStamped
+    trigger: True
   
   #tasks_accomplished:
   #  topic: "safe_rl_training_node/object_avoided"
   #  msg_type: BoolStamped
   #  trigger: True
 
-  #timeout:
-  #  topic: "safe_rl_training_node/timeout"
-  #  msg_type: BoolStamped
-  #  trigger: True
-
-  # this is for training the rl agent
-  ep_reset:
-    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+  timeout:
+    topic: "safe_rl_training_node/timeout"
     msg_type: BoolStamped
     trigger: True
+
+  # this is for training the rl agent
+  #ep_reset:
+  #  topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+  #  msg_type: BoolStamped
+  #  trigger: True
 
 # Define nodes
 nodes:
@@ -107,18 +107,19 @@ states:
 
   EPISODE_RESET:
     transitions: {}
-    active_nodes:
-      - safe_rl_training_node  
+    active_nodes: 
+      - led_emitter_node
     lights: "RED"
 
   OBJECT_AVOIDANCE:
     transitions:
-      ep_reset: EPISODE_RESET
-      #object_avoided: LANE_FOLLOWING
-      #collision_detected: EMERGENCY_STOP
+      object_avoided: EPISODE_RESET
+      collision_detected: EPISODE_RESET
+      timeout: EPISODE_RESET
     active_nodes:
       - tof_obstacle_detection_node
       - safe_rl_training_node
       - avoiders_controller_node
+      - led_emitter_node
     lights: "BLUE"
 
