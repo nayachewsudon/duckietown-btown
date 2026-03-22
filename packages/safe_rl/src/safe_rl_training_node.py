@@ -299,7 +299,10 @@ class SafeRLTrainingNode(DTROS):
 
             done = self.step()
             if done:
-                rospy.loginfo("[safe_rl] episode finished")
+                if self.object_avoided:
+                    rospy.loginfo("[safe_rl] obstacle cleared successfully")
+                else:
+                    rospy.loginfo("[safe_rl] episode ended (timeout or collision)")
                 break
         
         rospy.loginfo(f"[safe_rl_training] Episode {self.episode_count} ended, total timesteps: {self.total_timesteps}")
