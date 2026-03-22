@@ -37,7 +37,7 @@ class SafeRLTrainingNode(DTROS):
         self.start_timesteps = rospy.get_param("~start_timesteps", 20)
         self.total_timesteps = 0
         self.std_noise = rospy.get_param("~std_noise", 0.1)
-        self.weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights") #TODO: create path? 
+        self.weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights") 
 
         #Timeout variables
         self.episode_start_time = 0.0
@@ -166,7 +166,7 @@ class SafeRLTrainingNode(DTROS):
         rate = rospy.Rate(10)
         while not self.object_avoided and self.switch:
             if rospy.get_time() - self.episode_start_time > self.episode_timeout: 
-                rospy.loginfo("[safe_rl_training] Episode timed out while waiting for avoidance_done")
+                rospy.loginfo("[safe_rl_training] Episode timed out")
                 msg = BoolStamped()
                 msg.header.stamp = rospy.Time.now()
                 msg.data = True
@@ -188,13 +188,13 @@ class SafeRLTrainingNode(DTROS):
         #Stores full experience tuple (s, a, r, s') in replay buffer, which is what TD3 learns from
         self.replay_buffer.add((state, new_state, action, reward, done))
 
-        #Train agent only after 20 experiences are collected 
-        if len(self.replay_buffer.storage) > 20: 
-            self.agent.train(self.replay_buffer, iterations=1)
-
         #Save weights every 15 timesteps so we don't lose progress if bot crashes or shuts down
         if self.total_timesteps % 15 == 0:
             self.save_weights()
+
+        #Train agent only after 20 experiences are collected 
+        if len(self.replay_buffer.storage) > 20: 
+            self.agent.train(self.replay_buffer, iterations=1)
 
         # Reset flags for next step
         self.object_avoided = False
@@ -304,6 +304,12 @@ class SafeRLTrainingNode(DTROS):
                 else:
                     rospy.loginfo("[safe_rl] episode ended (timeout or collision)")
                 break
+
+        #Saves every episode
+        #To restart from scratch, delete the weights using: rm -rf /data/safe_rl_weights/
+        if len(self.replay_buffer.storage) > 0:
+            self.save_weights()
+
         
         rospy.loginfo(f"[safe_rl_training] Episode {self.episode_count} ended, total timesteps: {self.total_timesteps}")
     

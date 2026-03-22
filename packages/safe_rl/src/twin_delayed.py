@@ -122,9 +122,12 @@ class TD3(object):
 
         self.max_action = max_action
 
+    #Fix: edit to avoid numpy conversion
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
-        return self.actor(state).cpu().data.numpy().flatten()
+        with torch.no_grad():
+            action = self.actor(state).cpu()
+        return action.detach().tolist()[0]
 
     def train(self, replay_buffer, iterations, batch_size=100, discount=0.99, \
               tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2):
