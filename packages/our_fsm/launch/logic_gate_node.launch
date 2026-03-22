@@ -1,6 +1,6 @@
 <launch>
     <arg name="veh" doc="Name of vehicle. ex: megaman"/>
-    <arg name="pkg_name" default="fsm"/>
+    <arg name="pkg_name" default="our_fsm"/>
     <arg name="node_name" default="logic_gate_node"/>
     <arg name="param_file_name" default="default"/>
 
