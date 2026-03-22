@@ -30,6 +30,7 @@ class SafeRLTrainingNode(DTROS):
         self.obstacle_detected = False
         self.object_avoided = False
         self.collision_detected = False
+        self.episode_end_reason = None
         self.reward = 0
         self.lane_offset = 0.0
         self.lane_heading = 0.0
@@ -174,6 +175,7 @@ class SafeRLTrainingNode(DTROS):
         """Training step with exploration noise, replay buffer, and training."""
         self.collision_detected = False
         self.object_avoided = False
+        self.episode_end_reason = None
 
         state = self.state_observation()
 
@@ -193,6 +195,7 @@ class SafeRLTrainingNode(DTROS):
         rate = rospy.Rate(10)
         while not self.object_avoided and self.switch:
             if self.check_collision():
+                self.episode_end_reason = "collision"
                 break
             if rospy.get_time() - self.episode_start_time > self.episode_timeout:
                 rospy.loginfo("[safe_rl_training] Episode timed out")
@@ -200,6 +203,7 @@ class SafeRLTrainingNode(DTROS):
                 msg.header.stamp = rospy.Time.now()
                 msg.data = True
                 self.pub_timeout.publish(msg)
+                self.episode_end_reason = "timeout"
                 return True
             rate.sleep()
 
@@ -209,6 +213,8 @@ class SafeRLTrainingNode(DTROS):
         reward = self.reward
 
         done = self.collision_detected or self.check_obstacle_cleared()
+        if done and self.episode_end_reason is None:
+            self.episode_end_reason = "collision" if self.collision_detected else "cleared"
 
         self.replay_buffer.add((state, new_state, action, reward, done))
 
@@ -295,12 +301,10 @@ class SafeRLTrainingNode(DTROS):
         while self.switch:
             done = self.step()
             if done:
-                if self.collision_detected:
-                    rospy.loginfo("[safe_rl] collision detected, ending episode")
-                elif self.object_avoided:
-                    rospy.loginfo("[safe_rl] obstacle cleared successfully")
-                else:
-                    rospy.loginfo("[safe_rl] episode ended (timeout or collision)")
+                rospy.loginfo(
+                    "[safe_rl_training] episode ended, reason=%s",
+                    self.episode_end_reason or "unknown",
+                )
                 break
 
         if len(self.replay_buffer.storage) > 0:
