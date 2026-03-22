@@ -95,7 +95,12 @@ class SafeRLNode(DTROS):
             return
         self.tof_distance = tof_msg.range
         self.tof_min_range = tof_msg.min_range
-        rospy.loginfo_throttle(1.0, "[safe_rl] front_center_tof=%.3fm", self.tof_distance)
+        rospy.loginfo_throttle(
+            1.0,
+            "[safe_rl] front_center_tof=%.3fm (min=%.3fm)",
+            self.tof_distance,
+            self.tof_min_range,
+        )
 
     def cb_avoidance_done(self, avoidance_msg):
         if not self.switch:
@@ -145,7 +150,7 @@ class SafeRLNode(DTROS):
         self.pub_collision.publish(msg)
 
     def check_collision(self):
-        if 0.0 < self.tof_distance <= self.collision_threshold():
+        if self.tof_distance <= self.collision_threshold():
             self.publish_collision()
             return True
         return False
@@ -184,13 +189,12 @@ class SafeRLNode(DTROS):
         self.execute_action(action)
 
         rate = rospy.Rate(10)
-        while not self.object_avoided and self.switch:
+        while self.switch:
             if self.check_collision():
                 return "collision"
+            if self.object_avoided:
+                break
             rate.sleep()
-
-        if self.check_collision():
-            return "collision"
 
         if self.check_obstacle_cleared():
             msg = BoolStamped()
