@@ -33,7 +33,7 @@ events: # Maps from subscribing topic to signal ids
 
   #Topic published by the RL
   collision_detected:
-    topic: "safe_rl__training_node/collision_detected"
+    topic: "safe_rl_training_node/collision_detected"
     msg_type: BoolStamped
     trigger: True
 
