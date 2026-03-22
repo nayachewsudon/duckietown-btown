@@ -18,6 +18,6 @@
         <arg name="/lane_following/lane_controller" value="true"/>
     </include>
 
-    <node name="safe_rl_node" pkg="safe_rl" type="safe_rl_node.py" ns="$(arg veh)" output="screen">
+    <node name="safe_rl_node" pkg="our_safe_rl" type="safe_rl_node.py" ns="$(arg veh)" output="screen">
     </node>
 </launch>
