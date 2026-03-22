@@ -1,23 +1,23 @@
 events: # Maps from subscribing topic to signal ids
   collision_detected:
-    topic:
-    msg_type:
-    trigger:
+    topic: "safe_rl_training_node/collision_detected"
+    msg_type: BoolStamped
+    trigger: True
   
   tasks_accomplished:
-    topic:
-    msg_type:
-    trigger:
+    topic: "safe_rl_training_node/object_avoided"
+    msg_type: BoolStamped
+    trigger: True
 
   timeout:
-    topic:
-    msg_type:
-    trigger:
+    topic: "safe_rl_training_node/timeout"
+    msg_type: BoolStamped
+    trigger: True
 
-  ep_reset:
-    topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
-    msg_type:
-    trigger:
+  #ep_reset:
+  #  topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+  #  msg_type: BoolStamped
+  #  trigger: True
 
 
 gates:
