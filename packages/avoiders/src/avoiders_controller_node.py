@@ -46,6 +46,9 @@ class Avoider(DTROS): #comment here
         self.pub_motor = rospy.Publisher(
             "~car_cmd", Twist2DStamped, queue_size=1, dt_topic_type=TopicType.CONTROL
         )
+        self.pub_wheels_stop = rospy.Publisher(
+            "wheels_driver_node/wheels_cmd", WheelsCmdStamped, queue_size=1
+        )
 
         self.left_encoder_last = None
         self.right_encoder_last = None
@@ -140,6 +143,12 @@ class Avoider(DTROS): #comment here
             stop_msg.v = 0.0
             stop_msg.omega = 0.0
             self.pub_motor.publish(stop_msg)
+
+            wheels_stop_msg = WheelsCmdStamped()
+            wheels_stop_msg.header.stamp = rospy.Time.now()
+            wheels_stop_msg.vel_left = 0.0
+            wheels_stop_msg.vel_right = 0.0
+            self.pub_wheels_stop.publish(wheels_stop_msg)
             rospy.sleep(0.02)
 
     def on_switch_off(self):
