@@ -31,10 +31,12 @@ class SafeRLNode(DTROS):
         self.obstacle_detected = False
         self.object_avoided = False
         self.collision_detected = False
+        self.collision_samples = 0
         self.lane_offset = 0.0
         self.lane_heading = 0.0
         self.state = None
         self.collision_distance = rospy.get_param("~collision_distance", 0.033)
+        self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
 
         self.state_dim = 3
         self.action_dim = 2
@@ -154,8 +156,12 @@ class SafeRLNode(DTROS):
 
     def check_collision(self):
         if self.tof_distance <= self.collision_threshold():
-            self.publish_collision()
-            return True
+            self.collision_samples += 1
+            if self.collision_samples >= self.collision_count_threshold:
+                self.publish_collision()
+                return True
+        else:
+            self.collision_samples = 0
         return False
 
     def check_obstacle_cleared(self):
@@ -185,6 +191,7 @@ class SafeRLNode(DTROS):
     def step(self):
         """Deployment step."""
         self.collision_detected = False
+        self.collision_samples = 0
         self.object_avoided = False
 
         state = self.state_observation()

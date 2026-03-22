@@ -32,6 +32,7 @@ class SafeRLTrainingNode(DTROS):
         self.obstacle_detected = False
         self.object_avoided = False
         self.collision_detected = False
+        self.collision_samples = 0
         self.timeout_detected = False
         self.episode_end_reason = None
         self.reward = 0
@@ -48,6 +49,7 @@ class SafeRLTrainingNode(DTROS):
         self.episode_start_time = 0.0
         self.episode_timeout = rospy.get_param("~episode_timeout", 10.0)
         self.collision_distance = rospy.get_param("~collision_distance", 0.033)
+        self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
 
         self.state_dim = 3
         self.action_dim = 2
@@ -153,8 +155,12 @@ class SafeRLTrainingNode(DTROS):
 
     def check_collision(self):
         if self.tof_distance <= self.collision_threshold():
-            self.publish_collision()
-            return True
+            self.collision_samples += 1
+            if self.collision_samples >= self.collision_count_threshold:
+                self.publish_collision()
+                return True
+        else:
+            self.collision_samples = 0
         return False
 
     def compute_reward(self):
@@ -186,6 +192,7 @@ class SafeRLTrainingNode(DTROS):
     def step(self):
         """Training step with exploration noise, replay buffer, and training."""
         self.collision_detected = False
+        self.collision_samples = 0
         self.timeout_detected = False
         self.object_avoided = False
         self.episode_end_reason = None
