@@ -22,5 +22,6 @@
     </include>
 
     <node name="safe_rl_training_node" pkg="our_safe_rl" type="safe_rl_training_node.py" ns="$(arg veh)" output="screen">
+    <node name="avoiders_controller_node" pkg="avoiders" type="avoiders_controller_node.py" ns="$(arg veh)" output="screen">
     </node>
 </launch>
