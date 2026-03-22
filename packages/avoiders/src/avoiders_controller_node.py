@@ -132,11 +132,15 @@ class Avoider(DTROS): #comment here
 
     #Publish stop for training
     def publish_stop(self):
-        stop_msg = Twist2DStamped()
-        stop_msg.header.stamp = rospy.Time.now()
-        stop_msg.v = 0.0
-        stop_msg.omega = 0.0
-        self.pub_motor.publish(stop_msg)
+        # Publish a short burst of zero commands so the stop is not missed
+        # when the FSM switches states and nodes at the same time.
+        for _ in range(5):
+            stop_msg = Twist2DStamped()
+            stop_msg.header.stamp = rospy.Time.now()
+            stop_msg.v = 0.0
+            stop_msg.omega = 0.0
+            self.pub_motor.publish(stop_msg)
+            rospy.sleep(0.02)
 
     def on_switch_off(self):
         self.loginfo("Avoider switched off: stopping robot and clearing path.")
