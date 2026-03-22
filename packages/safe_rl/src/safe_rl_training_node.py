@@ -33,8 +33,8 @@ class SafeRLTrainingNode(DTROS):
 
         #Variables for training
         self.episode_count = 0
-        self.max_episodes = rospy.get_param("~max_episodes", 100)
-        self.start_timesteps = rospy.get_param("~start_timesteps", 100)
+        self.max_episodes = rospy.get_param("~max_episodes", 30)
+        self.start_timesteps = rospy.get_param("~start_timesteps", 20)
         self.total_timesteps = 0
         self.std_noise = rospy.get_param("~std_noise", 0.1)
         self.weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights") #TODO: create path? 
@@ -161,6 +161,8 @@ class SafeRLTrainingNode(DTROS):
         
         # Execute and wait until avoider finishes maneuver
         self.execute_action(action)
+        self.total_timesteps +=1
+
         rate = rospy.Rate(10)
         while not self.object_avoided and self.switch:
             if rospy.get_time() - self.episode_start_time > self.episode_timeout: 
@@ -185,14 +187,13 @@ class SafeRLTrainingNode(DTROS):
 
         #Stores full experience tuple (s, a, r, s') in replay buffer, which is what TD3 learns from
         self.replay_buffer.add((state, new_state, action, reward, done))
-        self.total_timesteps +=1
 
-        #Train agent only after 100 experiences are collected 
-        if len(self.replay_buffer.storage) > 100: 
+        #Train agent only after 20 experiences are collected 
+        if len(self.replay_buffer.storage) > 20: 
             self.agent.train(self.replay_buffer, iterations=1)
 
-        #Save weights every 50 timesteps so we don't lose progress if bot crashes or shuts down
-        if self.total_timesteps % 50 == 0:
+        #Save weights every 15 timesteps so we don't lose progress if bot crashes or shuts down
+        if self.total_timesteps % 15 == 0:
             self.save_weights()
 
         # Reset flags for next step
@@ -287,14 +288,14 @@ class SafeRLTrainingNode(DTROS):
             return
         
         while self.switch:
-            """Timeout logic published"""
-            if rospy.get_time() - self.episode_start_time > self.episode_timeout:
-                rospy.loginfo("[safe_rl training] Episode timed out")
-                msg = BoolStamped()
-                msg.header.stamp = rospy.Time.now()
-                msg.data = True
-                self.pub_timeout.publish(msg)
-                break
+            #"""Timeout logic published"""
+            #if rospy.get_time() - self.episode_start_time > self.episode_timeout:
+            #    rospy.loginfo("[safe_rl training] Episode timed out")
+            #    msg = BoolStamped()
+            #    msg.header.stamp = rospy.Time.now()
+            #    msg.data = True
+            #    self.pub_timeout.publish(msg)
+            #    break
 
             done = self.step()
             if done:
