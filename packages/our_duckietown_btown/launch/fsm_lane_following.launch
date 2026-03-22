@@ -16,7 +16,9 @@
         <arg name="/lane_following/ground_projection" value="true"/>
         <arg name="/lane_following/lane_filter" value="true"/>
         <arg name="/lane_following/lane_controller" value="true"/>
-
+	
+	<arg name="LED" value="true"/>
+        <arg name="/LED/emitter" value="true"/>
         <arg name="obstacle_detection" value="true"/>
         <arg name="/obstacle_detection/tof" value="true"/>
     </include>
