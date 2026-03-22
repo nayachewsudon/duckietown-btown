@@ -41,7 +41,7 @@ class SafeRLTrainingNode(DTROS):
 
         #Timeout variables
         self.episode_start_time = 0.0
-        self.episode_timeout = rospy.get_param("~episode_timeout", 30.0)
+        self.episode_timeout = rospy.get_param("~episode_timeout", 10.0) #Timeout to eps reset in 10 seconds
         
         #RL components
         self.state_dim = 3 #[tof_distance, lane_offset, current_velocity]
@@ -163,6 +163,14 @@ class SafeRLTrainingNode(DTROS):
         self.execute_action(action)
         rate = rospy.Rate(10)
         while not self.object_avoided and self.switch:
+            if rospy.get_time() - self.episode_start_time > self.episode_timeout: 
+                rospy.loginfo("[safe_rl_training] Episode timed out while waiting for avoidance_done")
+                msg = BoolStamped()
+                msg.header.stamp() = rospy.Time.now()
+                msg.data = True
+                self.pub_timeout.publish(msg)
+                return True
+
             rate.sleep()
         
         #Observe new state
@@ -290,7 +298,7 @@ class SafeRLTrainingNode(DTROS):
 
             done = self.step()
             if done:
-                rospy.loginfo("[safe_rl] obstacle cleared, returning to lane following")
+                rospy.loginfo("[safe_rl] episode finished")
                 break
         
         rospy.loginfo(f"[safe_rl_training] Episode {self.episode_count} ended, total timesteps: {self.total_timesteps}")
