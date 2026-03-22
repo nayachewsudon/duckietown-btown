@@ -1,47 +1,139 @@
-# Template: template-ros
+# duckietown-btown
 
-This template provides a boilerplate repository
-for developing ROS-based software in Duckietown.
+A Duckietown project running on a **DB21J** robot with the **daffy** software stack. This project implements autonomous lane following with RL-based obstacle avoidance using a Twin Delayed Deep Deterministic Policy Gradient (TD3) agent.
 
-**NOTE:** If you want to develop software that does not use
-ROS, check out [this template](https://github.com/duckietown/template-basic).
+## What It Does
 
+The robot operates using a Finite State Machine (FSM) with two main behaviors:
 
-## How to use it
+1. **Lane Following** — The robot follows the lane continuously using the standard Duckietown lane filter and controller pipeline. It drives straight through intersections without stopping.
 
-### 1. Fork this repository
+2. **RL Obstacle Avoidance** — When the front-facing ToF (Time-of-Flight) sensor detects an obstacle, the FSM switches to `OBJECT_AVOIDANCE` state. A trained TD3 agent takes over and sends waypoints to an avoider controller node to navigate around the obstacle. Once the obstacle is cleared, the robot returns to lane following.
 
-Use the fork button in the top-right corner of the github page to fork this template repository.
+3. **Emergency Stop** — If a collision is imminent (ToF distance ≤ 5cm), the FSM transitions to `EMERGENCY_STOP`. The robot resumes lane following once the obstacle is cleared.
 
+### FSM States
 
-### 2. Create a new repository
+```
+LANE_FOLLOWING ──(object_detected)──► OBJECT_AVOIDANCE
+                                            │
+                              (object_avoided)│(collision_detected)
+                                            │        │
+                                            ▼        ▼
+                                     LANE_FOLLOWING  EMERGENCY_STOP
+                                                          │
+                                              (obstacle_cleared)│
+                                                          ▼
+                                                    LANE_FOLLOWING
+```
 
-Create a new repository on github.com while
-specifying the newly forked template repository as
-a template for your new repository.
+### Custom Packages
 
+| Package | Description |
+|---|---|
+| `our_fsm` | Custom FSM configuration for deployment and training |
+| `safe_rl` | TD3-based RL agent for obstacle avoidance (deployment + training nodes) |
+| `obstacle_detection` | ToF-based obstacle detection node (ported from ente) |
+| `stop_line_bypass` | Bypass node for stop line handling (optional) |
 
-### 3. Define dependencies
+---
 
-List the dependencies in the files `dependencies-apt.txt` and
-`dependencies-py3.txt` (apt packages and pip packages respectively).
+## Prerequisites
 
+- DB21J Duckiebot running **daffy** software stack
+- Docker and `dts` (Duckietown Shell) installed on your laptop
+- Robot and laptop on the same network
+- Calibrated camera (intrinsic + extrinsic)
 
-### 4. Place your code
+Verify your bot is reachable:
+```bash
+ping duckie2.local
+```
 
-Place your code in the directory `/packages/` of
-your new repository.
+---
 
+## Setup
 
-### 5. Setup launchers
+### 1. Clone the repository onto the bot
 
-The directory `/launchers` can contain as many launchers (launching scripts)
-as you want. A default launcher called `default.sh` must always be present.
+SSH into your bot and clone the repo:
+```bash
+ssh duckie@duckie2.local
+git clone https://github.com/nayachewsudon/duckietown-btown.git
+cd duckietown-btown
+```
 
-If you create an executable script (i.e., a file with a valid shebang statement)
-a launcher will be created for it. For example, the script file 
-`/launchers/my-launcher.sh` will be available inside the Docker image as the binary
-`dt-launcher-my-launcher`.
+### 2. Verify robot config files
 
-When launching a new container, you can simply provide `dt-launcher-my-launcher` as
-command.
+Make sure these files exist on the bot:
+```bash
+cat /data/config/robot_type    # should output: duckiebot
+cat /data/config/robot_model   # should output: DB21J
+```
+
+If missing, create them:
+```bash
+echo "duckiebot" | sudo tee /data/config/robot_type
+echo "DB21J" | sudo tee /data/config/robot_model
+docker restart kvstore ros-interface device-proxy car-interface
+```
+
+### 3. Verify calibration
+
+Make sure intrinsic and extrinsic calibration files exist:
+```bash
+ls /data/config/calibrations/camera_intrinsic/
+ls /data/config/calibrations/camera_extrinsic/
+```
+
+If not calibrated, follow the [Duckietown calibration guide](https://docs.duckietown.com/daffy/opmanual-duckiebot/operations/calibration_camera/index.html).
+
+---
+
+## Launching
+
+### Lane Following (with obstacle avoidance)
+
+From your laptop, run the project inside the Duckietown Docker container:
+
+```bash
+dts duckiebot demo \
+  --demo_name fsm_lane_following \
+  --duckiebot_name duckie2 \
+  --package_name duckietown_btown \
+  --image duckietown/dt-core:daffy-arm32v7
+```
+
+Or if running directly on the bot via SSH:
+
+```bash
+roslaunch duckietown_btown fsm_lane_following.launch veh:=duckie2
+```
+
+### RL Training (optional)
+
+To train the TD3 agent from scratch, use the training FSM:
+
+```bash
+roslaunch duckietown_btown fsm_lane_following.launch veh:=duckie2 fsm_file_name:=fsm_training
+```
+
+Trained weights are saved to `/data/safe_rl_weights/` on the bot every 50 timesteps.
+
+---
+
+## Key Topics
+
+| Topic | Description |
+|---|---|
+| `lane_filter_node/lane_pose` | Lane pose estimate (d, phi) |
+| `tof_obstacle_detection_node/obstacle_detected` | Obstacle detected by ToF sensor |
+| `tof_obstacle_detection_node/obstacle_cleared` | Obstacle no longer in path |
+| `safe_rl_node/object_avoided` | RL agent successfully avoided obstacle |
+| `safe_rl_node/collision_detected` | Imminent collision detected |
+| `fsm_node/mode` | Current FSM state |
+
+---
+- The stop line transition is commented out in the FSM — the robot drives straight through intersections
+- RL weights must be pre-trained and present at `/data/safe_rl_weights/` before running the deployment node
+- The `safe_rl_training_node` must be run before `safe_rl_node` to generate weights
