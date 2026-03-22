@@ -31,6 +31,7 @@ class SafeRLTrainingNode(DTROS):
         self.obstacle_detected = False
         self.object_avoided = False
         self.collision_detected = False
+        self.timeout_detected = False
         self.episode_end_reason = None
         self.reward = 0
         self.lane_offset = 0.0
@@ -176,6 +177,7 @@ class SafeRLTrainingNode(DTROS):
     def step(self):
         """Training step with exploration noise, replay buffer, and training."""
         self.collision_detected = False
+        self.timeout_detected = False
         self.object_avoided = False
         self.episode_end_reason = None
 
@@ -196,9 +198,6 @@ class SafeRLTrainingNode(DTROS):
 
         rate = rospy.Rate(10)
         while not self.object_avoided and self.switch:
-            if self.check_collision():
-                self.episode_end_reason = "collision"
-                break
             if rospy.get_time() - self.episode_start_time > self.episode_timeout:
                 rospy.loginfo("[safe_rl_training] Episode timed out")
                 msg = BoolStamped()
@@ -206,7 +205,11 @@ class SafeRLTrainingNode(DTROS):
                 msg.data = True
                 self.pub_timeout.publish(msg)
                 self.episode_end_reason = "timeout"
-                return True
+                self.timeout_detected = True
+                break
+            if self.check_collision():
+                self.episode_end_reason = "collision"
+                break
             rate.sleep()
 
         new_state = self.state_observation()
@@ -214,9 +217,12 @@ class SafeRLTrainingNode(DTROS):
         self.compute_reward()
         reward = self.reward
 
-        done = self.collision_detected or self.check_obstacle_cleared()
+        done = self.timeout_detected or self.collision_detected or self.check_obstacle_cleared()
         if done and self.episode_end_reason is None:
-            self.episode_end_reason = "collision" if self.collision_detected else "cleared"
+            if self.timeout_detected:
+                self.episode_end_reason = "timeout"
+            else:
+                self.episode_end_reason = "collision" if self.collision_detected else "cleared"
 
         self.replay_buffer.add((state, new_state, action, reward, done))
 
@@ -228,7 +234,7 @@ class SafeRLTrainingNode(DTROS):
 
         self.reward = 0
 
-        if done and not self.collision_detected:
+        if done and not self.collision_detected and not self.timeout_detected:
             msg = BoolStamped()
             msg.header.stamp = rospy.Time.now()
             msg.data = True
