@@ -9,7 +9,7 @@
         <arg name="camera_topic" value="$(arg camera_topic)"/>
         <arg name="demo_name" value="lane_following"/>
         <arg name="fsm" value="true"/>
-        <arg name="fsm_file_name" value="our_fsm"/>
+        <arg name="fsm_file_name" value="our_fsm_training"/>
         <arg name="anti_instagram" value="true"/>
         <arg name="/lane_following/line_detection" value="true"/>
         <arg name="lane_following" value="true"/>
@@ -21,6 +21,6 @@
         <arg name="/obstacle_detection/tof" value="true"/>
     </include>
 
-    <node name="safe_rl_node" pkg="our_safe_rl" type="safe_rl_node.py" ns="$(arg veh)" output="screen">
+    <node name="safe_rl_training_node" pkg="our_safe_rl" type="safe_rl_training_node.py" ns="$(arg veh)" output="screen">
     </node>
 </launch>
