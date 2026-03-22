@@ -70,6 +70,7 @@ states:
       - ground_projection_node
       - lane_controller_node
       - led_emitter_node
+      - tof_obstacle_detection_node
     lights: "WHITE"
 
   EMERGENCY_STOP:

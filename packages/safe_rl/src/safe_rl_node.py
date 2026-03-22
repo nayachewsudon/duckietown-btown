@@ -20,18 +20,6 @@ class SafeRLNode(DTROS):
             node_type=NodeType.CONTROL,
         )
 
-        self.sub_obst_detected = rospy.Subscriber("tof_obstacle_detection_node/obstacle_detected", BoolStamped, self.cb_obstacle_detected, queue_size=1)
-        self.sub_obst_cleared = rospy.Subscriber("tof_obstacle_detection_node/obstacle_cleared", BoolStamped, self.cb_obstacle_cleared, queue_size=2)
-        self.sub_tof = rospy.Subscriber("tof_obstacle_detection_node/front_center_tof/range", Range, self.cb_tof_range)
-        self.sub_avoidance_done = rospy.Subscriber("avoiders_controller_node/avoidance_done", BoolStamped, self.cb_avoidance_done)
-        self.sub_lane = rospy.Subscriber("lane_filter_node/lane_pose", LanePose, self.cb_lane)
-        self.sub_car_cmd = rospy.Subscriber("lane_controller_node/car_cmd", Twist2DStamped, self.cb_car_cmd)
-        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_state_change)  # ← deduplicated
-
-        self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
-        self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
-        self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)  # ← added
-
         self.tof_distance = float('inf')
         self.current_velocity = 0.0
         self.previous_velocity = 0.0
@@ -48,6 +36,18 @@ class SafeRLNode(DTROS):
 
         weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights")
         self.load_weights(weights_path)
+
+        self.sub_obst_detected = rospy.Subscriber("tof_obstacle_detection_node/obstacle_detected", BoolStamped, self.cb_obstacle_detected, queue_size=1)
+        self.sub_obst_cleared = rospy.Subscriber("tof_obstacle_detection_node/obstacle_cleared", BoolStamped, self.cb_obstacle_cleared, queue_size=2)
+        self.sub_tof = rospy.Subscriber("tof_obstacle_detection_node/front_center_tof/range", Range, self.cb_tof_range)
+        self.sub_avoidance_done = rospy.Subscriber("avoiders_controller_node/avoidance_done", BoolStamped, self.cb_avoidance_done)
+        self.sub_lane = rospy.Subscriber("lane_filter_node/lane_pose", LanePose, self.cb_lane)
+        self.sub_car_cmd = rospy.Subscriber("lane_controller_node/car_cmd", Twist2DStamped, self.cb_car_cmd)
+        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_state_change)  # ← deduplicated
+
+        self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
+        self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
+        self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)  # ← added
 
     def load_weights(self, path):
         try:
