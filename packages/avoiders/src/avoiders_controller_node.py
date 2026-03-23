@@ -314,7 +314,7 @@ class Avoider(DTROS): #comment here
 
     def check_point(self,current_point,target_point):
         threshold = 0.05
-        threshold_x = 0.05
+        threshold_x = 0.15 #Fixed, loosened threshold_x
 
         if self.iter_ == (self.len_states - 1):
             dist_x = current_point - target_point

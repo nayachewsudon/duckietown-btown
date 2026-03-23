@@ -181,6 +181,9 @@ class SafeRLTrainingNode(DTROS):
         if not self.obstacle_detected:
             if self.current_velocity > self.previous_velocity:
                 self.reward = +1
+        
+        if self.timeout_detected:
+            self.reward = -5
 
     def state_observation(self):
         return np.array([
