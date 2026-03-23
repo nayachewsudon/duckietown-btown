@@ -32,6 +32,7 @@ class SafeRLTrainingNode(DTROS):
         self.previous_velocity = 0.0
         self.obstacle_detected = False
         self.obstacle_cleared = False
+        self.awaiting_obstacle_clear = False
         self.object_avoided = False
         self.collision_detected = False
         self.collision_samples = 0
@@ -135,13 +136,15 @@ class SafeRLTrainingNode(DTROS):
         self.obstacle_detected = msg.data
         if msg.data:
             self.obstacle_cleared = False
+            self.awaiting_obstacle_clear = True
 
     def cb_obstacle_cleared(self, msg):
         if not self.switch:
             return
-        if msg.data:
+        if msg.data and self.awaiting_obstacle_clear:
             self.obstacle_detected = False
             self.obstacle_cleared = True
+            self.awaiting_obstacle_clear = False
             self.object_avoided = True
             rospy.loginfo("[safe_rl_training] obstacle_cleared received; tof=%.3f", self.tof_distance)
 
@@ -226,6 +229,7 @@ class SafeRLTrainingNode(DTROS):
         self.collision_samples = 0
         self.timeout_detected = False
         self.obstacle_cleared = False
+        self.awaiting_obstacle_clear = self.obstacle_detected
         self.object_avoided = False
         self.episode_end_reason = None
 

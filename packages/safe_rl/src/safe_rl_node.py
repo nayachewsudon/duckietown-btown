@@ -29,6 +29,8 @@ class SafeRLNode(DTROS):
         self.current_velocity = 0.0
         self.previous_velocity = 0.0
         self.obstacle_detected = False
+        self.obstacle_cleared = False
+        self.awaiting_obstacle_clear = False
         self.object_avoided = False
         self.collision_detected = False
         self.collision_samples = 0
@@ -126,13 +128,17 @@ class SafeRLNode(DTROS):
         if not self.switch:
             return
         self.obstacle_detected = msg.data
+        if msg.data:
+            self.obstacle_cleared = False
+            self.awaiting_obstacle_clear = True
 
     def cb_obstacle_cleared(self, msg):
         if not self.switch:
             return
-        if msg.data:
+        if msg.data and self.awaiting_obstacle_clear:
             self.obstacle_detected = False
-            self.object_avoided = True
+            self.obstacle_cleared = True
+            self.awaiting_obstacle_clear = False
 
     def state_observation(self):
         return np.array([
@@ -168,7 +174,7 @@ class SafeRLNode(DTROS):
         return False
 
     def check_obstacle_cleared(self):
-        if self.object_avoided and self.tof_distance > self.obstacle_clear_distance:
+        if self.object_avoided and (self.obstacle_cleared or self.tof_distance > self.obstacle_clear_distance):
             return True
         return False
 
@@ -202,6 +208,8 @@ class SafeRLNode(DTROS):
         """Deployment step."""
         self.collision_detected = False
         self.collision_samples = 0
+        self.obstacle_cleared = False
+        self.awaiting_obstacle_clear = self.obstacle_detected
         self.object_avoided = False
 
         state = self.state_observation()
@@ -212,7 +220,7 @@ class SafeRLNode(DTROS):
         while self.switch:
             if self.check_collision():
                 return "collision"
-            if self.object_avoided:
+            if self.object_avoided and self.check_obstacle_cleared():
                 break
             rate.sleep()
 
