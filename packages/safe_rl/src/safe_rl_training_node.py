@@ -142,6 +142,7 @@ class SafeRLTrainingNode(DTROS):
         if msg.data:
             self.obstacle_detected = False
             self.obstacle_cleared = True
+            self.object_avoided = True
             rospy.loginfo("[safe_rl_training] obstacle_cleared received; tof=%.3f", self.tof_distance)
 
     def cb_state_change(self, msg):
@@ -255,7 +256,7 @@ class SafeRLTrainingNode(DTROS):
             if self.check_collision():
                 self.episode_end_reason = "collision"
                 break
-            if self.object_avoided and self.check_obstacle_cleared():
+            if self.check_obstacle_cleared():
                 break
             if self.object_avoided:
                 rospy.loginfo_throttle(
@@ -322,7 +323,7 @@ class SafeRLTrainingNode(DTROS):
         self.pub_avoidance_path.publish(msg)
 
     def check_obstacle_cleared(self):
-        if self.object_avoided and (self.obstacle_cleared or self.tof_distance > self.obstacle_clear_distance):
+        if self.obstacle_cleared or (self.object_avoided and self.tof_distance > self.obstacle_clear_distance):
             return True
         return False
 

@@ -132,6 +132,7 @@ class SafeRLNode(DTROS):
             return
         if msg.data:
             self.obstacle_detected = False
+            self.object_avoided = True
 
     def state_observation(self):
         return np.array([
