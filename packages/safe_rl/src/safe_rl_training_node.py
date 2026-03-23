@@ -31,6 +31,7 @@ class SafeRLTrainingNode(DTROS):
         self.current_velocity = 0.0
         self.previous_velocity = 0.0
         self.obstacle_detected = False
+        self.obstacle_cleared = False
         self.object_avoided = False
         self.collision_detected = False
         self.collision_samples = 0
@@ -130,12 +131,16 @@ class SafeRLTrainingNode(DTROS):
         if not self.switch:
             return
         self.obstacle_detected = msg.data
+        if msg.data:
+            self.obstacle_cleared = False
 
     def cb_obstacle_cleared(self, msg):
         if not self.switch:
             return
         if msg.data:
             self.obstacle_detected = False
+            self.obstacle_cleared = True
+            rospy.loginfo("[safe_rl_training] obstacle_cleared received; tof=%.3f", self.tof_distance)
 
     def cb_state_change(self, msg):
         self.state = msg.state
@@ -217,6 +222,7 @@ class SafeRLTrainingNode(DTROS):
         self.collision_detected = False
         self.collision_samples = 0
         self.timeout_detected = False
+        self.obstacle_cleared = False
         self.object_avoided = False
         self.episode_end_reason = None
 
@@ -247,8 +253,14 @@ class SafeRLTrainingNode(DTROS):
             if self.check_collision():
                 self.episode_end_reason = "collision"
                 break
-            if self.object_avoided:
+            if self.object_avoided and self.check_obstacle_cleared():
                 break
+            if self.object_avoided:
+                rospy.loginfo_throttle(
+                    1.0,
+                    "[safe_rl_training] avoidance_done received; waiting for obstacle_cleared/tof_clear (tof=%.3f)",
+                    self.tof_distance,
+                )
             rate.sleep()
 
         new_state = self.state_observation()
@@ -309,7 +321,7 @@ class SafeRLTrainingNode(DTROS):
 
     def check_obstacle_cleared(self):
         critical_distance = 0.2
-        if self.object_avoided and self.tof_distance > critical_distance:
+        if self.object_avoided and (self.obstacle_cleared or self.tof_distance > critical_distance):
             return True
         return False
 
