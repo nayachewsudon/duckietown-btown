@@ -37,6 +37,7 @@ class SafeRLNode(DTROS):
         self.state = None
         self.collision_distance = rospy.get_param("~collision_distance", 0.03)
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
+        self.avoidance_lateral_scale = rospy.get_param("~avoidance_lateral_scale", 0.2)
 
         self.state_dim = 2
         self.action_dim = 1
@@ -180,17 +181,17 @@ class SafeRLNode(DTROS):
         msg = Polygon()
         p1 = Point32()
         p1.x = 0.2
-        p1.y = float(omega) * 0.1
+        p1.y = float(omega) * self.avoidance_lateral_scale
         p1.z = 0.0
 
         p2 = Point32()
         p2.x = 0.4
-        p2.y = float(omega) * 0.2
+        p2.y = float(omega) * (2.0 * self.avoidance_lateral_scale)
         p2.z = 0.0
 
         p3 = Point32()
         p3.x = 0.6
-        p3.y = float(omega) * 0.3
+        p3.y = float(omega) * (3.0 * self.avoidance_lateral_scale)
         p3.z = 0.0
 
         msg.points = [p1, p2, p3]
