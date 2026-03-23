@@ -6,7 +6,7 @@ import numpy as np
 import rospy
 import torch
 from duckietown.dtros import DTROS, NodeType
-from duckietown_msgs.msg import BoolStamped, FSMState, LanePose, Twist2DStamped
+from duckietown_msgs.msg import BoolStamped, FSMState, LanePose, Twist2DStamped, WheelsCmdStamped
 from geometry_msgs.msg import Point32, Polygon
 from sensor_msgs.msg import Range
 
@@ -23,6 +23,7 @@ class SafeRLNode(DTROS):
         )
         self._initialized = False
         self._loop_started = False
+        self.pub_wheels_stop = None
 
         self.tof_distance = float("inf")
         self.tof_min_range = 0.0
@@ -41,6 +42,8 @@ class SafeRLNode(DTROS):
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
         self.avoidance_lateral_scale = rospy.get_param("~avoidance_lateral_scale", 0.2)
         self.obstacle_clear_distance = rospy.get_param("~obstacle_clear_distance", 0.05)
+        self.min_avoidance_time = rospy.get_param("~min_avoidance_time", 0.5)
+        self.avoidance_start_time = 0.0
 
         self.state_dim = 2
         self.action_dim = 1
@@ -79,7 +82,9 @@ class SafeRLNode(DTROS):
         self.pub_object_avoided = rospy.Publisher("~object_avoided", BoolStamped, queue_size=1)
         self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
         self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)
+        self.pub_wheels_stop = rospy.Publisher("wheels_driver_node/wheels_cmd", WheelsCmdStamped, queue_size=1)
         self._initialized = True
+        rospy.on_shutdown(self._on_shutdown)
         if self.switch:
             self.on_switch_on()
 
@@ -92,6 +97,9 @@ class SafeRLNode(DTROS):
 
     def cb_state_change(self, msg):
         self.state = msg.state
+        if msg.state == "EMERGENCY_STOP":
+            rospy.loginfo("[safe_rl] FSM entered EMERGENCY_STOP, publishing stop")
+            self.publish_stop()
 
     def cb_lane(self, lane_msg):
         if not self.switch:
@@ -139,6 +147,11 @@ class SafeRLNode(DTROS):
             self.obstacle_detected = False
             self.obstacle_cleared = True
             self.awaiting_obstacle_clear = False
+            if rospy.get_time() - self.avoidance_start_time >= self.min_avoidance_time:
+                self.object_avoided = True
+                rospy.loginfo("[safe_rl] obstacle_cleared accepted at tof=%.3f", self.tof_distance)
+            else:
+                rospy.loginfo("[safe_rl] ignoring early obstacle_cleared at tof=%.3f", self.tof_distance)
 
     def state_observation(self):
         return np.array([
@@ -153,6 +166,7 @@ class SafeRLNode(DTROS):
         if self.collision_detected:
             return
         self.collision_detected = True
+        self.publish_stop()
         rospy.logwarn(
             "[safe_rl] Collision detected at %.3fm (threshold %.3fm)",
             self.tof_distance,
@@ -174,9 +188,26 @@ class SafeRLNode(DTROS):
         return False
 
     def check_obstacle_cleared(self):
-        if self.object_avoided and (self.obstacle_cleared or self.tof_distance > self.obstacle_clear_distance):
+        if self.object_avoided and self.obstacle_cleared:
             return True
         return False
+
+    def publish_stop(self, repeat=5, sleep_s=0.02):
+        pub_wheels_stop = getattr(self, "pub_wheels_stop", None)
+        if pub_wheels_stop is None:
+            rospy.logwarn("[safe_rl] wheel stop publisher unavailable, skipping stop publish")
+            return
+
+        for _ in range(repeat):
+            stop_msg = WheelsCmdStamped()
+            stop_msg.header.stamp = rospy.Time.now()
+            stop_msg.vel_left = 0.0
+            stop_msg.vel_right = 0.0
+            try:
+                pub_wheels_stop.publish(stop_msg)
+                rospy.sleep(sleep_s)
+            except rospy.ROSException:
+                break
 
     def execute_action(self, action):
         # action is now 1D: [omega]
@@ -211,6 +242,7 @@ class SafeRLNode(DTROS):
         self.obstacle_cleared = False
         self.awaiting_obstacle_clear = self.obstacle_detected
         self.object_avoided = False
+        self.avoidance_start_time = rospy.get_time()
 
         state = self.state_observation()
         action = self.agent.select_action(state)
@@ -240,10 +272,20 @@ class SafeRLNode(DTROS):
         if self._loop_started:
             return
         self._loop_started = True
+        self.avoidance_start_time = rospy.get_time()
         rospy.loginfo("[safe_rl] switched on, starting RL loop")
         t = threading.Thread(target=self._rl_loop)
         t.daemon = True
         t.start()
+
+    def on_switch_off(self):
+        rospy.loginfo("[safe_rl] switched off, publishing stop")
+        self.publish_stop()
+        self._loop_started = False
+
+    def _on_shutdown(self):
+        rospy.loginfo("[safe_rl] shutdown requested, publishing stop")
+        self.publish_stop()
 
     def _rl_loop(self):
         rospy.loginfo("[safe_rl] RL loop started")
