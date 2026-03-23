@@ -42,6 +42,11 @@ events: # Maps from subscribing topic to signal ids
     msg_type: BoolStamped
     trigger: True
 
+  after_emergency_stop:
+    topic: "tof_obstacle_detection_node/obstacle_cleared"
+    msg_type: BoolStamped
+    trigger: True
+
   # this is for training the rl agent
   #ep_reset:
   #  topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
@@ -83,14 +88,13 @@ states:
       - tof_obstacle_detection_node
     lights: "WHITE"
 
-  #EMERGENCY_STOP:
-  #  transitions:
-  #    after_emergency_stop: "LANE_FOLLOWING"
-  #  active_nodes:
-  #    - lane_controller_node
-  #    - ground_projection_node
-  #    - led_emitter_node
-  #  lights: "RED"
+  EMERGENCY_STOP:
+    transitions:
+      after_emergency_stop: "EPISODE_RESET"
+    active_nodes:
+      - led_emitter_node
+      - tof_obstacle_detection_node
+    lights: "RED"
 
   #ARRIVE_AT_STOP_LINE:
   #  transitions: 
@@ -114,7 +118,7 @@ states:
   OBJECT_AVOIDANCE:
     transitions:
       object_avoided: EPISODE_RESET
-      collision_detected: EPISODE_RESET
+      collision_detected: EMERGENCY_STOP
       timeout: EPISODE_RESET
     active_nodes:
       - tof_obstacle_detection_node

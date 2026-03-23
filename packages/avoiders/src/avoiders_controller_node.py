@@ -166,13 +166,13 @@ class Avoider(DTROS): #comment here
         self.planning = False
 
     def cb_fsm_mode(self, msg):
-        # Ensure we stop the robot when the FSM enters EPISODE_RESET
+        # Ensure we stop the robot when the FSM enters a stop or reset state.
         try:
             state = msg.state
         except Exception:
             state = None
 
-        if state == "EPISODE_RESET":
+        if state in ("EPISODE_RESET", "EMERGENCY_STOP"):
             rospy.loginfo("Avoider: detected FSM EPISODE_RESET — publishing stop")
             self.publish_stop()
             self.reset()

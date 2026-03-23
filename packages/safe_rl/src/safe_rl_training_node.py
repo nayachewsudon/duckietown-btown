@@ -7,7 +7,7 @@ import numpy as np
 import rospy
 import torch
 from duckietown.dtros import DTROS, NodeType
-from duckietown_msgs.msg import BoolStamped, FSMState, LanePose, Twist2DStamped
+from duckietown_msgs.msg import BoolStamped, FSMState, LanePose, Twist2DStamped, WheelsCmdStamped
 from geometry_msgs.msg import Point32, Polygon
 from sensor_msgs.msg import Range
 
@@ -88,7 +88,9 @@ class SafeRLTrainingNode(DTROS):
         self.pub_avoidance_path = rospy.Publisher("avoiders_controller_node/avoidance_path", Polygon, queue_size=1)
         self.pub_collision = rospy.Publisher("~collision_detected", BoolStamped, queue_size=1)
         self.pub_timeout = rospy.Publisher("~timeout", BoolStamped, queue_size=1)
+        self.pub_wheels_stop = rospy.Publisher("wheels_driver_node/wheels_cmd", WheelsCmdStamped, queue_size=1)
         self._initialized = True
+        rospy.on_shutdown(self._on_shutdown)
         if self.switch:
             self.on_switch_on()
 
@@ -136,6 +138,9 @@ class SafeRLTrainingNode(DTROS):
 
     def cb_state_change(self, msg):
         self.state = msg.state
+        if msg.state in ("EPISODE_RESET", "EMERGENCY_STOP"):
+            rospy.loginfo("[safe_rl_training] FSM entered %s, publishing emergency stop", msg.state)
+            self.publish_stop()
 
     def collision_threshold(self):
         return self.collision_distance
@@ -188,6 +193,15 @@ class SafeRLTrainingNode(DTROS):
             self.tof_distance,
             self.lane_offset,
         ])
+
+    def publish_stop(self, repeat=5, sleep_s=0.02):
+        for _ in range(repeat):
+            stop_msg = WheelsCmdStamped()
+            stop_msg.header.stamp = rospy.Time.now()
+            stop_msg.vel_left = 0.0
+            stop_msg.vel_right = 0.0
+            self.pub_wheels_stop.publish(stop_msg)
+            rospy.sleep(sleep_s)
 
     def step(self):
         """Training step with exploration noise, replay buffer, and training."""
@@ -328,12 +342,15 @@ class SafeRLTrainingNode(DTROS):
 
         if self.episode_count >= self.max_episodes:
             rospy.loginfo("[safe_rl_training] Max episodes reached!")
+            self.publish_stop()
             self.save_weights()
+            self._loop_started = False
             return
 
         while self.switch:
             done = self.step()
             if done:
+                self.publish_stop()
                 rospy.loginfo(
                     "[safe_rl_training] episode ended, reason=%s",
                     self.episode_end_reason or "unknown",
@@ -345,6 +362,15 @@ class SafeRLTrainingNode(DTROS):
             self.save_weights()
 
         rospy.loginfo(f"[safe_rl_training] Episode {self.episode_count} ended, total timesteps: {self.total_timesteps}")
+
+    def on_switch_off(self):
+        rospy.loginfo("[safe_rl_training] switched off, publishing emergency stop")
+        self.publish_stop()
+        self._loop_started = False
+
+    def _on_shutdown(self):
+        rospy.loginfo("[safe_rl_training] shutdown requested, publishing emergency stop")
+        self.publish_stop()
 
 
 if __name__ == "__main__":
