@@ -51,8 +51,8 @@ class SafeRLTrainingNode(DTROS):
         self.collision_distance = rospy.get_param("~collision_distance", 0.033)
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
 
-        self.state_dim = 3
-        self.action_dim = 2
+        self.state_dim = 2
+        self.action_dim = 1
         self.max_action = 1.0
         self.agent = TD3(self.state_dim, self.action_dim, self.max_action)
         self.replay_buffer = ReplayBuffer()
@@ -177,19 +177,15 @@ class SafeRLTrainingNode(DTROS):
 
         if self.object_avoided:
             self.reward = +10
-
-        if not self.obstacle_detected:
-            if self.current_velocity > self.previous_velocity:
-                self.reward = +1
-        
+        # NOTE: removed velocity-based reward — velocity is not controlled
+        # by the avoider in the current architecture (short-term fix).
         if self.timeout_detected:
             self.reward = -5
 
     def state_observation(self):
         return np.array([
             self.tof_distance,
-            self.lane_offset,
-            self.current_velocity,
+            self.lane_offset
         ])
 
     def step(self):
@@ -203,14 +199,12 @@ class SafeRLTrainingNode(DTROS):
         state = self.state_observation()
 
         if self.total_timesteps < self.start_timesteps:
-            action = np.array([
-                random.uniform(-self.max_action, self.max_action),
-                random.uniform(-self.max_action, self.max_action),
-            ])
+            action = np.array([random.uniform(-self.max_action, self.max_action)])
         else:
             action = self.agent.select_action(state)
+            # ensure action is array-like, then add noise
             noise = np.random.normal(0, self.std_noise, size=self.action_dim)
-            action = (action + noise).clip(-self.max_action, self.max_action)
+            action = (np.array(action) + noise).clip(-self.max_action, self.max_action)
 
         self.execute_action(action)
         self.total_timesteps += 1
@@ -264,8 +258,11 @@ class SafeRLTrainingNode(DTROS):
         return done
 
     def execute_action(self, action):
-        """Convert [v, omega] into three waypoints for the avoider."""
-        _, omega = action[0], action[1]
+        """Convert [omega] into three waypoints for the avoider."""
+        if isinstance(action, (list, tuple, np.ndarray)):
+            omega = float(action[0])
+        else:
+            omega = float(action)
 
         msg = Polygon()
         p1 = Point32()
