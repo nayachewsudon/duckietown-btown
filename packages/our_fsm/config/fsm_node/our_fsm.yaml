@@ -77,8 +77,6 @@ states:
     transitions:
       after_emergency_stop: "LANE_FOLLOWING"
     active_nodes:
-      - lane_controller_node
-      - ground_projection_node
       - led_emitter_node
       - tof_obstacle_detection_node
     lights: "RED"
