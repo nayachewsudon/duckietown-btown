@@ -277,6 +277,7 @@ class Avoider(DTROS): #comment here
                         msg_done = BoolStamped()
                         msg_done.data = True
                         self.pub_avoid_done.publish(msg_done)
+                        rospy.loginfo("[avoider] published avoidance_done topic")
 
                         return 
 
