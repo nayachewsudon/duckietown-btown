@@ -21,8 +21,11 @@ class TOFObstacleDetectionNode(DTROS):
         node_name (:obj:`str`): a unique, descriptive name for the node that ROS will use
 
     Configuration:
-        ~tof_distance_threshold (:obj:`float`): The minimum value for the tof range (distance to obstacle) before
-        an obstacle is reported as present
+        ~tof_distance_threshold (:obj:`float`): Legacy threshold used for both detect and clear when
+        separate thresholds are not configured.
+        ~tof_distance_detect_threshold (:obj:`float`): Distance below which an obstacle is reported.
+        ~tof_distance_clear_threshold (:obj:`float`): Distance above which a previously detected
+        obstacle is reported as cleared.
 
     Subscriber:
         ~front_center_tof/range (:obj:`sensor_msgs.msg.Range`): The data coming from the TOF sensor
@@ -37,7 +40,9 @@ class TOFObstacleDetectionNode(DTROS):
 
         self._obstacle_present = False
         rospy.Subscriber('~front_center_tof/range', Range, self.cb_tof_range)
-        self._tof_threshold = rospy.get_param("~tof_distance_threshold")
+        default_threshold = rospy.get_param("~tof_distance_threshold", 0.2)
+        self._tof_detect_threshold = rospy.get_param("~tof_distance_detect_threshold", default_threshold)
+        self._tof_clear_threshold = rospy.get_param("~tof_distance_clear_threshold", default_threshold)
 
         self.pub_obst_detected = rospy.Publisher("~obstacle_detected", BoolStamped, queue_size=1)
         self.pub_obst_cleared = rospy.Publisher("~obstacle_cleared", BoolStamped, queue_size=1)
@@ -46,9 +51,9 @@ class TOFObstacleDetectionNode(DTROS):
     def cb_tof_range(self, msg: Range):
         if msg.range >= msg.max_range or msg.range < msg.min_range: 
             return
-        obstacle_detected = False
-        if msg.range < self._tof_threshold:
-            obstacle_detected = True
+        obstacle_detected = msg.range < self._tof_detect_threshold
+        obstacle_cleared = msg.range > self._tof_clear_threshold
+
         if obstacle_detected and not self._obstacle_present:
             # this means that we just detected this obstacle and we should report it
             self._obstacle_present = True
@@ -56,7 +61,7 @@ class TOFObstacleDetectionNode(DTROS):
             obstacle_detected_msg.header = msg.header
             obstacle_detected_msg.data = True
             self.pub_obst_detected.publish(obstacle_detected_msg)
-        if self._obstacle_present and not obstacle_detected:
+        if self._obstacle_present and obstacle_cleared:
             # this means that the obstacle was just cleared and we should report it
             self._obstacle_present = False
             obstacle_cleared_msg = BoolStamped()
