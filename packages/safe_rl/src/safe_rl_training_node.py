@@ -47,7 +47,7 @@ class SafeRLTrainingNode(DTROS):
         self.weights_path = rospy.get_param("~weights_path", "/data/safe_rl_weights")
 
         self.episode_start_time = 0.0
-        self.episode_timeout = rospy.get_param("~episode_timeout", 10.0)
+        self.episode_timeout = rospy.get_param("~episode_timeout", 5.0)
         self.collision_distance = rospy.get_param("~collision_distance", 0.033)
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
 
