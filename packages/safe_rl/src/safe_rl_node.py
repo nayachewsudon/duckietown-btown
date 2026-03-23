@@ -38,8 +38,8 @@ class SafeRLNode(DTROS):
         self.collision_distance = rospy.get_param("~collision_distance", 0.033)
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
 
-        self.state_dim = 3
-        self.action_dim = 2
+        self.state_dim = 2
+        self.action_dim = 1
         self.max_action = 1.0
         self.agent = TD3(self.state_dim, self.action_dim, self.max_action)
 
@@ -134,7 +134,6 @@ class SafeRLNode(DTROS):
         return np.array([
             self.tof_distance,
             self.lane_offset,
-            self.current_velocity,
         ])
 
     def collision_threshold(self):
@@ -171,20 +170,28 @@ class SafeRLNode(DTROS):
         return False
 
     def execute_action(self, action):
-        _, omega = action[0], action[1]
+        # action is now 1D: [omega]
+        if isinstance(action, (list, tuple, np.ndarray)):
+            omega = float(action[0])
+        else:
+            omega = float(action)
+
         msg = Polygon()
         p1 = Point32()
         p1.x = 0.2
         p1.y = float(omega) * 0.1
         p1.z = 0.0
+
         p2 = Point32()
         p2.x = 0.4
         p2.y = float(omega) * 0.2
         p2.z = 0.0
+
         p3 = Point32()
         p3.x = 0.6
         p3.y = float(omega) * 0.3
         p3.z = 0.0
+
         msg.points = [p1, p2, p3]
         self.pub_avoidance_path.publish(msg)
 

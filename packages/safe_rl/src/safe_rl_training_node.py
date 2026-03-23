@@ -186,7 +186,7 @@ class SafeRLTrainingNode(DTROS):
     def state_observation(self):
         return np.array([
             self.tof_distance,
-            self.lane_offset
+            self.lane_offset,
         ])
 
     def step(self):
