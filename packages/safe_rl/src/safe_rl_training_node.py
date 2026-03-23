@@ -24,6 +24,7 @@ class SafeRLTrainingNode(DTROS):
         )
         self._initialized = False
         self._loop_started = False
+        self.pub_wheels_stop = None
 
         self.tof_distance = float("inf")
         self.tof_min_range = 0.0
@@ -195,13 +196,21 @@ class SafeRLTrainingNode(DTROS):
         ])
 
     def publish_stop(self, repeat=5, sleep_s=0.02):
+        pub_wheels_stop = getattr(self, "pub_wheels_stop", None)
+        if pub_wheels_stop is None:
+            rospy.logwarn("[safe_rl_training] wheel stop publisher unavailable, skipping emergency stop publish")
+            return
+
         for _ in range(repeat):
             stop_msg = WheelsCmdStamped()
             stop_msg.header.stamp = rospy.Time.now()
             stop_msg.vel_left = 0.0
             stop_msg.vel_right = 0.0
-            self.pub_wheels_stop.publish(stop_msg)
-            rospy.sleep(sleep_s)
+            try:
+                pub_wheels_stop.publish(stop_msg)
+                rospy.sleep(sleep_s)
+            except rospy.ROSException:
+                break
 
     def step(self):
         """Training step with exploration noise, replay buffer, and training."""
