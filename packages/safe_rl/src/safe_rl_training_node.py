@@ -102,8 +102,12 @@ class SafeRLTrainingNode(DTROS):
     def cb_lane(self, lane_msg):
         if not self.switch:
             return
-        self.lane_offset = lane_msg.d
-        self.lane_heading = lane_msg.phi
+        if np.isfinite(lane_msg.d):
+            self.lane_offset = lane_msg.d
+        else:
+            rospy.logwarn_throttle(1.0, "[safe_rl_training] ignoring non-finite lane offset")
+        if np.isfinite(lane_msg.phi):
+            self.lane_heading = lane_msg.phi
 
     def cb_tof_range(self, tof_msg):
         if not self.switch:
@@ -201,10 +205,9 @@ class SafeRLTrainingNode(DTROS):
             self.reward = -5
 
     def state_observation(self):
-        return np.array([
-            self.tof_distance,
-            self.lane_offset,
-        ])
+        tof_distance = self.tof_distance if np.isfinite(self.tof_distance) else 1.0
+        lane_offset = self.lane_offset if np.isfinite(self.lane_offset) else 0.0
+        return np.array([tof_distance, lane_offset], dtype=np.float32)
 
     def publish_stop(self, repeat=5, sleep_s=0.02):
         pub_wheels_stop = getattr(self, "pub_wheels_stop", None)
@@ -306,6 +309,10 @@ class SafeRLTrainingNode(DTROS):
             omega = float(action[0])
         else:
             omega = float(action)
+        if not np.isfinite(omega):
+            rospy.logwarn_throttle(1.0, "[safe_rl_training] non-finite action received, forcing omega=0")
+            omega = 0.0
+        omega = float(np.clip(omega, -self.max_action, self.max_action))
 
         msg = Polygon()
         p1 = Point32()
