@@ -79,6 +79,7 @@ class Avoider(DTROS): #comment here
 
         self.sub_path = rospy.Subscriber(
             "~avoidance_path", Polygon, self.execute,queue_size=10)
+        self.sub_mode = rospy.Subscriber("fsm_node/mode", FSMState, self.cb_fsm_mode)
         
         self.pub_avoid_done = rospy.Publisher("~avoidance_done", BoolStamped, queue_size=2)
 
@@ -152,17 +153,31 @@ class Avoider(DTROS): #comment here
             rospy.sleep(0.02)
 
     def on_switch_off(self):
-        self.loginfo("Avoider switched off: stopping robot and clearing path.")
+        rospy.loginfo("Avoider switched off: stopping robot and clearing path.")
         self.publish_stop()
         self.reset()
         self.path_valid = False
         self.planning = False
     
     def on_switch_on(self):
-        self.loginfo("Avoider switched on: resetting planner state.")
+        rospy.loginfo("Avoider switched on: resetting planner state.")
         self.reset()
         self.path_valid = False
         self.planning = False
+
+    def cb_fsm_mode(self, msg):
+        # Ensure we stop the robot when the FSM enters EPISODE_RESET
+        try:
+            state = msg.state
+        except Exception:
+            state = None
+
+        if state == "EPISODE_RESET":
+            rospy.loginfo("Avoider: detected FSM EPISODE_RESET — publishing stop")
+            self.publish_stop()
+            self.reset()
+            self.path_valid = False
+            self.planning = False
     
     def cb_ts_encoders(self, left_encoder, right_encoder):
 

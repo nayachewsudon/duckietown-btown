@@ -112,6 +112,7 @@ class SafeRLNode(DTROS):
             return
         if avoidance_msg.data:
             self.object_avoided = True
+            rospy.loginfo("[safe_rl_training] cb_avoidance_done received: %s; tof=%.3f", avoidance_msg.data, self.tof_distance)
 
     def cb_car_cmd(self, cmd_msg):
         if not self.switch:
