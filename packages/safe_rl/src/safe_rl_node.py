@@ -38,6 +38,7 @@ class SafeRLNode(DTROS):
         self.collision_distance = rospy.get_param("~collision_distance", 0.03)
         self.collision_count_threshold = rospy.get_param("~collision_count_threshold", 3)
         self.avoidance_lateral_scale = rospy.get_param("~avoidance_lateral_scale", 0.2)
+        self.obstacle_clear_distance = rospy.get_param("~obstacle_clear_distance", 0.05)
 
         self.state_dim = 2
         self.action_dim = 1
@@ -166,8 +167,7 @@ class SafeRLNode(DTROS):
         return False
 
     def check_obstacle_cleared(self):
-        critical_distance = 0.2
-        if self.object_avoided and self.tof_distance > critical_distance:
+        if self.object_avoided and self.tof_distance > self.obstacle_clear_distance:
             return True
         return False
 
