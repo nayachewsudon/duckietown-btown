@@ -1,6 +1,9 @@
 # duckietown-btown
 
-A Duckietown project running on a **DB21J** robot with the **daffy** software stack. This project implements autonomous lane following with RL-based obstacle avoidance using a Twin Delayed Deep Deterministic Policy Gradient (TD3) agent.
+A Duckietown project running on a **DB21J** robot with the **daffy** software stack. This project extends autonomous lane following with RL-based obstacle avoidance using a Twin Delayed Deep Deterministic Policy Gradient (TD3) agent.
+
+## Check out our Demo Video:
+https://youtu.be/JUI11DJULSc
 
 ## What It Does
 
