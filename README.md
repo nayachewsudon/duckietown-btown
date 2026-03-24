@@ -27,14 +27,13 @@ LANE_FOLLOWING ──(object_detected)──► OBJECT_AVOIDANCE
                                                     LANE_FOLLOWING
 ```
 
-### Custom Packages
+### Packages
 
 | Package | Description |
 |---|---|
 | `our_fsm` | Custom FSM configuration for deployment and training |
 | `safe_rl` | TD3-based RL agent for obstacle avoidance (deployment + training nodes) |
 | `obstacle_detection` | ToF-based obstacle detection node (ported from ente) |
-| `stop_line_bypass` | Bypass node for stop line handling (optional) |
 
 ---
 
@@ -134,6 +133,12 @@ Trained weights are saved to `/data/safe_rl_weights/` on the bot every 50 timest
 | `fsm_node/mode` | Current FSM state |
 
 ---
-- The stop line transition is commented out in the FSM — the robot drives straight through intersections
+## Notes
 - RL weights must be pre-trained and present at `/data/safe_rl_weights/` before running the deployment node
-- The `safe_rl_training_node` must be run before `safe_rl_node` to generate weights
+- The `safe_rl_training_node` and the corresponding training FSM must be run before `safe_rl_node` to generate weights
+- Customize the distance threshold based on your preference
+
+## Acknowledgement
+
+- Dt-core stack: https://github.com/duckietown/dt-core
+- Twin Delayed Algorithm, taken from: [https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/blob/master/BipedalWalker-TwinDelayed-DDPG%20(TD3)/BipedalWalker_1795ep_300-5sc_9h44m.ipynb](https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master/BipedalWalker-TwinDelayed-DDPG%20(TD3))](https://github.com/Rafael1s/Deep-Reinforcement-Learning-Algorithms/tree/master/BipedalWalker-TwinDelayed-DDPG%20(TD3))
