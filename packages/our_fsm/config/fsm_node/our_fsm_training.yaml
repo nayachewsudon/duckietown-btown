@@ -1,6 +1,6 @@
-# FSM used during deployment
-#Uses events collision_detected to state EMERGENCY_STOP
-#and after_emergency_stop to state LANE_FOLLOWING
+#FSM used for RL Training
+#This FSM does not include event collision_detected transitioning to EMERGENCY_STOP 
+#and event emergency_stop
 
 initial_state: "LANE_FOLLOWING"
 
@@ -15,27 +15,43 @@ events: # Maps from subscribing topic to signal ids
   #  msg_type: "BoolStamped"
   #  trigger: True
 
-#Basically after collision, we wait until obstacle is gone from path, we can go back to lane following
-  after_emergency_stop:
-    topic: "tof_obstacle_detection_node/obstacle_cleared" #changed to check the tof_obstacle_detection_node, this topic doesn't exist in safe_rl
-    msg_type: BoolStamped
-    trigger: True
-
   object_detected:
     topic: "tof_obstacle_detection_node/obstacle_detected"
     msg_type: "BoolStamped"
     trigger: True
 
+  #Should be present in the deployed FSM yaml
   object_avoided:
-    topic: "safe_rl_node/object_avoided"
+    topic: "safe_rl_training_node/object_avoided"
     msg_type: "BoolStamped"
     trigger: True
 
   #Topic published by the RL
   collision_detected:
-    topic: "safe_rl_node/collision_detected"
+    topic: "safe_rl_training_node/collision_detected"
     msg_type: BoolStamped
     trigger: True
+  
+  #tasks_accomplished:
+  #  topic: "safe_rl_training_node/object_avoided"
+  #  msg_type: BoolStamped
+  #  trigger: True
+
+  timeout:
+    topic: "safe_rl_training_node/timeout"
+    msg_type: BoolStamped
+    trigger: True
+
+  after_emergency_stop:
+    topic: "tof_obstacle_detection_node/obstacle_cleared"
+    msg_type: BoolStamped
+    trigger: True
+
+  # this is for training the rl agent
+  #ep_reset:
+  #  topic: "logic_gate_node/tasks_accomplished_or_collision_detected_or_timeout"
+  #  msg_type: BoolStamped
+  #  trigger: True
 
 # Define nodes
 nodes:
@@ -43,10 +59,10 @@ nodes:
   line_detector_node: "line_detector_node/switch"
   lane_filter_node: "lane_filter_node/switch"
   ground_projection_node: "ground_projection_node/switch"
-  stop_line_filter_node: "stop_line_filter_node/switch"
+  #stop_line_filter_node: "stop_line_filter_node/switch"
   lane_controller_node: "lane_controller_node/switch"
   led_emitter_node: "led_emitter_node/switch"
-  safe_rl_node: "safe_rl_node/switch"
+  safe_rl_training_node: "safe_rl_training_node/switch"
   #unicorn_intersection_node: "unicorn_intersection_node/switch"
   #intersection_planner_node: "intersection_planner_node/switch"
   avoiders_controller_node: "avoiders_controller_node/switch"
@@ -57,7 +73,6 @@ nodes:
 global_transitions: {}
 
 # Define states
-
 states:
   LANE_FOLLOWING:
     transitions:
@@ -75,28 +90,11 @@ states:
 
   EMERGENCY_STOP:
     transitions:
-      after_emergency_stop: "LANE_FOLLOWING"
+      after_emergency_stop: "EPISODE_RESET"
     active_nodes:
       - led_emitter_node
       - tof_obstacle_detection_node
     lights: "RED"
-
-  #EPISODE_RESET:
-  #  transitions: {}
-  #  active_nodes:
-  #    - safe_rl_node  
-  #  lights: "RED"
-
-  OBJECT_AVOIDANCE:
-    transitions:
-      #tasks_accomplished_or_collision_detected_or_timeout: EPISODE_RESET
-      object_avoided: LANE_FOLLOWING
-      collision_detected: EMERGENCY_STOP
-    active_nodes:
-      - tof_obstacle_detection_node
-      - safe_rl_node
-      - avoiders_controller_node
-    lights: "BLUE"
 
   #ARRIVE_AT_STOP_LINE:
   #  transitions: 
@@ -110,4 +108,22 @@ states:
   #    - unicorn_intersection_node
   #    - intersection_planner_node
   #  lights: "YELLOW"
+
+  EPISODE_RESET:
+    transitions: {}
+    active_nodes: 
+      - led_emitter_node
+    lights: "RED"
+
+  OBJECT_AVOIDANCE:
+    transitions:
+      object_avoided: EPISODE_RESET
+      collision_detected: EMERGENCY_STOP
+      timeout: EPISODE_RESET
+    active_nodes:
+      - tof_obstacle_detection_node
+      - safe_rl_training_node
+      - avoiders_controller_node
+      - led_emitter_node
+    lights: "BLUE"
 

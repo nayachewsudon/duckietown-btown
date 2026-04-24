@@ -2,10 +2,18 @@
 import copy
 
 import rospy
-from duckietown_msgs.msg import BoolStamped, FSMState
+from duckietown_msgs.msg import AprilTagsWithInfos, BoolStamped, FSMState, Twist2DStamped
 from duckietown_msgs.srv import SetFSMState, SetFSMStateResponse, ChangePattern
+from std_msgs.msg import Float32, String, UInt8
 from std_srvs.srv import SetBool
-from std_msgs.msg import String
+
+classes = {
+    "BoolStamped": BoolStamped,
+    "Twist2DStamped": Twist2DStamped,
+    "AprilTagsWithInfos": AprilTagsWithInfos,
+    "Float32": Float32,
+    "UInt8": UInt8,
+}
 
 
 class FSMNode:
@@ -48,8 +56,8 @@ class FSMNode:
             rospy.loginfo(f"FSM waiting for service {service_name}")
             try:
                 rospy.wait_for_service(
-                    service_name, timeout=30.0
-                )  #  Increased timeout to handle slower node initialization
+                    service_name, timeout=10.0
+                )  #  Not sure if there is a better way to do this
                 self.srv_dict[node_name] = rospy.ServiceProxy(service_name, SetBool)
                 rospy.loginfo(f"FSM found service {service_name}")
             except rospy.ROSException as e:
@@ -72,11 +80,7 @@ class FSMNode:
             topic_name = event_dict["topic"]
             msg_type = event_dict["msg_type"]
             self.event_trigger_dict[event_name] = event_dict["trigger"]
-            # TODO so far I can't figure out how to put msg_type instead of BoolStamped.
-            # importlib might help. But it might get too complicated since different type
-            self.sub_list.append(
-                rospy.Subscriber(topic_name, BoolStamped, self.cbEvent, callback_args=event_name)
-            )
+            self.sub_list.append(rospy.Subscriber(topic_name, classes[msg_type], self.cbEvent, callback_args=event_name))
 
         rospy.loginfo(f"[{self.node_name}] Initialized.")
         # Publish initial state
@@ -101,6 +105,9 @@ class FSMNode:
                 pass_flag = False
             if "msg_type" not in event_dict:
                 rospy.logerr(f"[{self.node_name}] Event {event_name} missing msg_type definition.")
+                pass_flag = False
+            elif event_dict["msg_type"] not in classes:
+                rospy.logerr(f"[{self.node_name}] Event {event_name} has unsupported msg_type {event_dict['msg_type']}.")
                 pass_flag = False
             if "trigger" not in event_dict:
                 rospy.logerr(f"[{self.node_name}] Event {event_name} missing trigger definition.")
